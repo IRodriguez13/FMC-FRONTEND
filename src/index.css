@@ -1,0 +1,105 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    @apply bg-cream-100 text-coffee-800 font-body;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-coffee-600 hover:bg-coffee-700 text-cream-50 font-body font-semibold px-6 py-3 rounded-xl transition-all duration-200 shadow-coffee hover:shadow-coffee-lg hover:-translate-y-0.5 active:translate-y-0;
+  }
+  .btn-secondary {
+    @apply border-2 border-coffee-400 text-coffee-600 hover:bg-coffee-50 font-body font-semibold px-6 py-3 rounded-xl transition-all duration-200;
+  }
+  .input-field {
+    @apply w-full px-4 py-3 rounded-xl border border-sand-300 bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-coffee-400 focus:border-transparent transition-all duration-200 font-body text-coffee-800 placeholder-coffee-400;
+  }
+  .card {
+    @apply bg-white/80 backdrop-blur-sm rounded-2xl shadow-card border border-sand-200 transition-all duration-300 hover:shadow-card-hover;
+  }
+  .star-filled {
+    @apply text-amber-400 fill-amber-400;
+  }
+  .star-empty {
+    @apply text-sand-300;
+  }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f5ede0;
+}
+::-webkit-scrollbar-thumb {
+  background: #c08b40;
+  border-radius: 3px;
+}
+
+/* Leaflet — el contenedor necesita altura explícita o el mapa queda en gris */
+.fmc-map-shell {
+  position: absolute;
+  inset: 0;
+  min-height: 320px;
+  z-index: 0;
+}
+
+.fmc-map-leaflet,
+.fmc-map-leaflet.leaflet-container {
+  height: 100% !important;
+  width: 100% !important;
+  min-height: 320px;
+  z-index: 0;
+  font-family: inherit;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 12px;
+}
+
+.leaflet-control-attribution {
+  font-size: 10px;
+}
+
+.fmc-map-marker-wrap {
+  background: transparent !important;
+  border: none !important;
+}
+
+.fmc-map-marker {
+  filter: drop-shadow(0 2px 3px rgb(60 35 20 / 35%));
+  transition: transform 0.15s ease;
+}
+
+.fmc-map-marker--selected {
+  transform: scale(1.12);
+  filter: drop-shadow(0 3px 6px rgb(60 35 20 / 45%));
+}
+
+.fmc-map-marker--premium {
+  filter: drop-shadow(0 2px 4px rgb(180 83 9 / 40%));
+}
+
+.fmc-map-marker--premium.fmc-map-marker--selected {
+  filter: drop-shadow(0 3px 7px rgb(180 83 9 / 55%));
+}
+
+/* Noise texture overlay */
+.noise-overlay::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.3;
+}
