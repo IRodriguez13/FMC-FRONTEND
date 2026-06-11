@@ -14,7 +14,7 @@ npm install --legacy-peer-deps
 npm run dev          # http://localhost:5173
 ```
 
-Proxy dev: `/api` y `/media` → `VITE_DEV_API_TARGET` (default `http://127.0.0.1:5214`).
+**Importante:** en `.env` definí `VITE_DEV_API_TARGET` con el **mismo puerto** que muestra `make run` (ej. `http://127.0.0.1:5215`). El front usa esa URL para `/api` y `/media` en dev (evita proxy desalineado).
 
 ## Tests
 

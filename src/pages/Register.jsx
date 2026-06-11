@@ -4,7 +4,7 @@ import { Eye, EyeOff, Mail, Lock, User, AlertCircle, CheckCircle2 } from 'lucide
 import Logo from '../components/Logo';
 import AuthBackLink from '../components/AuthBackLink';
 import { useAuth } from '../context/AuthContext';
-import { ApiError } from '../lib/apiClient';
+import { friendlyApiMessage } from '../lib/userFacingError';
 
 export default function Register() {
   const { registerConsumer } = useAuth();
@@ -35,7 +35,7 @@ export default function Register() {
       await registerConsumer({ email: form.email, password: form.password });
       navigate('/explore');
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'No se pudo crear la cuenta.');
+      setError(friendlyApiMessage(err, 'No pudimos crear tu cuenta. Revisá los datos e intentá otra vez.'));
     } finally {
       setLoading(false);
     }

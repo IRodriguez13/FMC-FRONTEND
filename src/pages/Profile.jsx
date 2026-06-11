@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCafeterias } from '../context/CafeteriasContext';
 import CafeCoverImage from '../components/CafeCoverImage';
-import { ApiError } from '../lib/apiClient';
+import { friendlyApiMessage } from '../lib/userFacingError';
 import { resolveMediaUrl } from '../lib/mediaUrl';
 
 function ProfilePanel({ children, className = '' }) {
@@ -65,7 +65,7 @@ export default function Profile() {
       const newToken = await setConsumerTier(tier);
       await refetch(newToken);
     } catch (e) {
-      setTierError(e instanceof ApiError ? e.message : 'No se pudo actualizar el plan.');
+      setTierError(friendlyApiMessage(e, 'No pudimos actualizar tu plan. Probá de nuevo.'));
     } finally {
       setTierLoading(false);
     }
@@ -115,7 +115,7 @@ export default function Profile() {
       await saveConsumerProfile({ displayName: profileForm.displayName.trim() });
       setProfileMessage('Perfil actualizado.');
     } catch (err) {
-      setProfileError(err instanceof ApiError ? err.message : 'No se pudo guardar el perfil.');
+      setProfileError(friendlyApiMessage(err, 'No pudimos guardar tu perfil. Probá de nuevo.'));
     } finally {
       setProfileSaving(false);
     }
@@ -132,7 +132,7 @@ export default function Profile() {
       await saveConsumerAvatar(file);
       setProfileMessage('Foto de perfil actualizada.');
     } catch (err) {
-      setProfileError(err instanceof ApiError ? err.message : 'No se pudo subir la foto.');
+      setProfileError(friendlyApiMessage(err, 'No pudimos subir la foto. Probá con otra imagen.'));
     } finally {
       setAvatarUploading(false);
     }

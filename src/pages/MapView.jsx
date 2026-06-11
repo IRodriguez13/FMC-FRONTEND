@@ -87,7 +87,7 @@ export default function MapView() {
             {error && (
               <EmptyState
                 icon={AlertCircle}
-                title="Sin conexión al backend"
+                title="No pudimos cargar el mapa"
                 description={error}
                 actionLabel="Reintentar"
                 onAction={handleRefresh}

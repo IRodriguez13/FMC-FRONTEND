@@ -4,7 +4,7 @@ import { Eye, EyeOff, Mail, Lock, AlertCircle, User, Store } from 'lucide-react'
 import Logo from '../components/Logo';
 import AuthBackLink from '../components/AuthBackLink';
 import { useAuth } from '../context/AuthContext';
-import { ApiError } from '../lib/apiClient';
+import { friendlyApiMessage } from '../lib/userFacingError';
 
 export default function Login() {
   const { loginConsumer, loginEnterprise } = useAuth();
@@ -32,9 +32,7 @@ export default function Login() {
         navigate(returnTo || '/enterprise');
       }
     } catch (err) {
-      setError(
-        err instanceof ApiError ? err.message : 'Email o contraseña incorrectos. Intentá de nuevo.'
-      );
+      setError(friendlyApiMessage(err, 'Email o contraseña incorrectos. Intentá de nuevo.'));
     } finally {
       setLoading(false);
     }

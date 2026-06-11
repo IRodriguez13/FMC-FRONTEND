@@ -4,7 +4,7 @@ import { Mail, Lock, Store, MapPin, AlertCircle } from 'lucide-react';
 import Logo from '../components/Logo';
 import AuthBackLink from '../components/AuthBackLink';
 import { useAuth } from '../context/AuthContext';
-import { ApiError } from '../lib/apiClient';
+import { friendlyApiMessage } from '../lib/userFacingError';
 import { DEFAULT_COORDS } from '../lib/geolocation';
 import { CABA, isWithinCaba } from '../lib/caba';
 
@@ -48,7 +48,7 @@ export default function RegisterBusiness() {
       });
       navigate('/enterprise');
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'No se pudo registrar el negocio.');
+      setError(friendlyApiMessage(err, 'No pudimos registrar tu negocio. Revisá los datos e intentá otra vez.'));
     } finally {
       setLoading(false);
     }

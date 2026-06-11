@@ -4,7 +4,7 @@ import { ArrowLeft, CheckCircle2, CreditCard, Loader2, Shield, Star } from 'luci
 import { useAuth } from '../context/AuthContext';
 import { useCafeterias } from '../context/CafeteriasContext';
 import { useToast } from '../context/ToastContext';
-import { ApiError } from '../lib/apiClient';
+import { friendlyApiMessage } from '../lib/userFacingError';
 
 const PLANS = {
   'consumer-premium': {
@@ -84,7 +84,7 @@ export default function PaymentCheckout() {
       setStep('done');
       toast.success('Premium activado correctamente.');
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'No se pudo activar Premium.');
+      setError(friendlyApiMessage(e, 'No pudimos activar Premium. Probá de nuevo.'));
     } finally {
       setActivating(false);
     }

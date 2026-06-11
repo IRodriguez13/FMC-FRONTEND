@@ -1,4 +1,5 @@
 import { ApiError } from './apiClient';
+import { friendlyApiMessage } from './userFacingError';
 
 function isRetryableError(err) {
   if (err?.name === 'AbortError') return false;
@@ -23,15 +24,4 @@ export async function fetchWithRetry(fn, { retries = 2, baseDelayMs = 1200 } = {
   throw lastErr;
 }
 
-export function friendlyApiMessage(err, fallback = 'No se pudo conectar con el servidor.') {
-  if (err instanceof ApiError) {
-    if (err.status >= 500 || err.status === 408) {
-      return 'El servidor está despertando o no responde. Probá de nuevo en unos segundos.';
-    }
-    return err.message;
-  }
-  if (err instanceof TypeError) {
-    return 'Sin conexión al backend. Verificá que la API esté en marcha.';
-  }
-  return err?.message || fallback;
-}
+export { friendlyApiMessage };

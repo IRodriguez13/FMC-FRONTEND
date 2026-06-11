@@ -1,5 +1,15 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mapNearbyItem, mapNearbyResponse } from './cafeteriaMapper';
+
+beforeEach(() => {
+  vi.stubEnv('VITE_API_URL', '');
+  vi.stubEnv('VITE_DEV_API_TARGET', 'http://127.0.0.1:5215');
+  vi.stubEnv('DEV', 'true');
+});
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
 
 const baseItem = {
   id: 'a1111111-1111-4111-8111-111111111101',
@@ -25,7 +35,7 @@ describe('mapNearbyItem', () => {
     expect(cafe.neighborhood).toBe('CABA');
     expect(cafe.distance).toBe(1400);
     expect(cafe.lat).toBe(baseItem.latitude);
-    expect(cafe.coverImage).toBe('/media/seed-palermo-barra.jpg');
+    expect(cafe.coverImage).toMatch(/\/media\/seed-palermo-barra\.jpg$/);
     expect(cafe.rating).toBe(4.2);
     expect(cafe.totalReviews).toBe(3);
   });
@@ -47,7 +57,7 @@ describe('mapNearbyItem', () => {
 
   it('usa fallback de portada si no hay coverImageUrl', () => {
     const cafe = mapNearbyItem({ ...baseItem, coverImageUrl: null });
-    expect(cafe.coverImage).toMatch(/^https:\/\//);
+    expect(cafe.coverImage).toBe('/images/fallback-cafe.jpg');
   });
 });
 

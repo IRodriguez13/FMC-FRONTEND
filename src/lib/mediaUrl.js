@@ -1,7 +1,7 @@
-const API_BASE = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '');
+import { getApiBase } from './apiBase';
 
-const FALLBACK_COVER =
-  'https://images.unsplash.com/photo-1495474472287-4d489bc25008?w=800&q=80';
+/** Fallback local (no depende de red externa). */
+const FALLBACK_COVER = '/images/fallback-cafe.jpg';
 
 /** Normaliza rutas seed legacy (.png con bytes JPEG) a .jpg. */
 function normalizeSeedMediaPath(path) {
@@ -11,14 +11,14 @@ function normalizeSeedMediaPath(path) {
   return path;
 }
 
-/** Resuelve URLs relativas del backend (/media/...) para dev (proxy) o prod (VITE_API_URL). */
+/** Resuelve URLs relativas del backend (/media/...) al host del API configurado. */
 export function resolveMediaUrl(url) {
   if (!url) return url;
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
   let path = url.startsWith('/') ? url : `/${url}`;
   path = normalizeSeedMediaPath(path);
-  if (import.meta.env.DEV && path.startsWith('/media')) return path;
-  return API_BASE ? `${API_BASE}${path}` : path;
+  const base = getApiBase();
+  return base ? `${base}${path}` : path;
 }
 
 export { FALLBACK_COVER };

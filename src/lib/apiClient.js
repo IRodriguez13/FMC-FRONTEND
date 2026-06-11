@@ -1,4 +1,4 @@
-const API_BASE = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '');
+import { getApiBase } from './apiBase';
 
 export class ApiError extends Error {
   constructor(message, status, body) {
@@ -15,7 +15,10 @@ function parseProblemDetail(data) {
 }
 
 export async function apiRequest(path, { method = 'GET', body, token, signal } = {}) {
-  const url = `${API_BASE}${path.startsWith('/') ? path : `/${path}`}`;
+  const base = getApiBase();
+  const url = base
+    ? `${base}${path.startsWith('/') ? path : `/${path}`}`
+    : path.startsWith('/') ? path : `/${path}`;
   const headers = { Accept: 'application/json' };
   if (body !== undefined) headers['Content-Type'] = 'application/json';
   if (token) headers.Authorization = `Bearer ${token}`;
@@ -53,7 +56,10 @@ export async function apiRequest(path, { method = 'GET', body, token, signal } =
 }
 
 export async function apiUpload(path, { file, fieldName = 'file', token, signal } = {}) {
-  const url = `${API_BASE}${path.startsWith('/') ? path : `/${path}`}`;
+  const base = getApiBase();
+  const url = base
+    ? `${base}${path.startsWith('/') ? path : `/${path}`}`
+    : path.startsWith('/') ? path : `/${path}`;
   const formData = new FormData();
   formData.append(fieldName, file);
 

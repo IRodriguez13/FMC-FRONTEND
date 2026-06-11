@@ -11,7 +11,7 @@ import CafeCoverImage from '../components/CafeCoverImage';
 import StarRating from '../components/StarRating';
 import { useAuth } from '../context/AuthContext';
 import { useCafeterias } from '../context/CafeteriasContext';
-import { ApiError } from '../lib/apiClient';
+import { friendlyApiMessage } from '../lib/userFacingError';
 import { resolveMediaUrl } from '../lib/mediaUrl';
 
 function authorLabel(role) {
@@ -65,7 +65,7 @@ export default function CafeDetail() {
       setTotalReviews(reviewsRes.totalCount ?? 0);
     } catch (err) {
       if (err.name !== 'AbortError') {
-        setMediaError(err instanceof ApiError ? err.message : 'No se pudieron cargar fotos ni reseñas.');
+        setMediaError(friendlyApiMessage(err, 'No pudimos cargar fotos ni reseñas de este local.'));
       }
     } finally {
       setMediaLoading(false);
@@ -117,7 +117,7 @@ export default function CafeDetail() {
       setReviewText('');
       await loadMedia();
     } catch (err) {
-      setActionMessage(err instanceof ApiError ? err.message : 'Error al guardar la reseña.');
+      setActionMessage(friendlyApiMessage(err, 'No pudimos publicar tu reseña. Probá de nuevo.'));
     } finally {
       setSubmittingReview(false);
     }
@@ -151,7 +151,7 @@ export default function CafeDetail() {
       setActionMessage('Foto subida.');
       await loadMedia();
     } catch (err) {
-      setActionMessage(err instanceof ApiError ? err.message : 'Error al subir la foto.');
+      setActionMessage(friendlyApiMessage(err, 'No pudimos subir la foto. Probá con otra imagen.'));
     } finally {
       setUploadingPhoto(false);
     }

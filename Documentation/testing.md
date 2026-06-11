@@ -14,6 +14,7 @@
 |---------|--------|
 | `src/lib/mediaUrl.test.js` | `resolveMediaUrl`, normalización seed PNG→JPG, proxy dev |
 | `src/lib/cafeteriaMapper.test.js` | `mapNearbyItem`, `mapNearbyResponse`, descuentos, cover |
+| `src/lib/userFacingError.test.js` | Mensajes de error orientados al usuario |
 
 ## Comandos
 

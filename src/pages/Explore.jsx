@@ -215,18 +215,9 @@ export default function Explore() {
         )}
 
         {error && !loading && (
-          <div className="flex flex-col items-center gap-3 py-16 text-center">
-            <AlertCircle className="text-red-500" size={32} />
-            <p className="font-body text-coffee-600">{error}</p>
-            <p className="font-body text-sm text-coffee-400">¿Está el backend en marcha? (make up · puerto 5214)</p>
-            <button type="button" onClick={handleRefresh} className="btn-primary">Reintentar</button>
-          </div>
-        )}
-
-        {error && !loading && (
           <EmptyState
             icon={AlertCircle}
-            title="Error al cargar"
+            title="No pudimos cargar resultados"
             description={error}
             actionLabel="Reintentar"
             onAction={handleRefresh}

@@ -47,7 +47,7 @@ export function CafeteriasProvider({ children }) {
     } catch (e) {
       if (signal?.aborted || e.name === 'AbortError') return;
       setCafes([]);
-      setError(friendlyApiMessage(e));
+      setError(friendlyApiMessage(e, 'No pudimos cargar cafeterías cerca tuyo. Probá de nuevo.'));
     } finally {
       if (!signal?.aborted) setLoading(false);
     }
