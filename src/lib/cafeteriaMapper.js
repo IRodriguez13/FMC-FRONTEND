@@ -1,7 +1,4 @@
-const COVER =
-  'https://images.unsplash.com/photo-1495474472287-4d489bc25008?w=800&q=80';
-const PROFILE =
-  'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=200&q=80';
+import { resolveMediaUrl, FALLBACK_COVER } from './mediaUrl';
 
 function neighborhoodFromAddress(address) {
   if (!address) return 'CABA';
@@ -20,6 +17,7 @@ function tagsFromItem(item) {
 /** Mapea NearbyCafeteriaItem del backend al modelo que usa la UI. */
 export function mapNearbyItem(item) {
   const description = item.description?.trim() || '';
+  const cover = item.coverImageUrl ? resolveMediaUrl(item.coverImageUrl) : FALLBACK_COVER;
   return {
     id: String(item.id),
     name: item.name,
@@ -32,10 +30,10 @@ export function mapNearbyItem(item) {
     lng: item.longitude,
     subscriptionTier: item.subscriptionTier,
     discountPercent: item.discountPercent ?? null,
-    coverImage: COVER,
-    profileImage: PROFILE,
-    rating: null,
-    totalReviews: null,
+    coverImage: cover,
+    profileImage: cover,
+    rating: item.averageRating ?? null,
+    totalReviews: item.reviewCount ?? null,
     tags: tagsFromItem(item),
     features: [],
     specialties: [],

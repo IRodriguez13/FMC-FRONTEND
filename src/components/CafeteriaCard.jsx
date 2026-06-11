@@ -1,36 +1,43 @@
 import { Heart, MapPin, Star, Tag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import CafeCoverImage from './CafeCoverImage';
 
 export default function CafeteriaCard({ cafe }) {
   const { user, toggleFavorite, isFavorite } = useAuth();
+  const showDiscount = user?.premium && cafe.discountPercent != null;
   const fav = isFavorite(cafe.id);
 
   return (
-    <div className="card group overflow-hidden">
+    <div className="card group overflow-hidden dark:bg-coffee-800 dark:border-coffee-700 dark:hover:border-coffee-600">
       <div className="relative h-48 overflow-hidden">
-        <img
+        <CafeCoverImage
           src={cafe.coverImage}
           alt={cafe.name}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent dark:from-black/60" />
         {user && (
           <button
             onClick={(e) => { e.preventDefault(); toggleFavorite(cafe.id); }}
             className={`absolute top-3 right-3 p-2 rounded-full backdrop-blur-sm transition-all ${
-              fav ? 'bg-red-500 text-white' : 'bg-white/80 text-coffee-600 hover:bg-white'
+              fav
+                ? 'bg-red-500 text-white'
+                : 'bg-white/80 text-coffee-600 hover:bg-cream-100 dark:bg-coffee-900/80 dark:text-cream-100 dark:hover:bg-coffee-800'
             }`}
           >
             <Heart size={16} className={fav ? 'fill-white' : ''} />
           </button>
         )}
-        <div className="absolute bottom-3 left-3 flex items-center gap-1 bg-white/90 backdrop-blur-sm text-coffee-700 text-xs font-semibold px-2 py-1 rounded-full">
+        <div className="absolute bottom-3 left-3 flex items-center gap-1 bg-white/90 dark:bg-coffee-900/90 backdrop-blur-sm text-coffee-700 dark:text-cream-100 text-xs font-semibold px-2 py-1 rounded-full">
           <MapPin size={11} />
           {cafe.distance < 1000 ? `${cafe.distance}m` : `${(cafe.distance / 1000).toFixed(1)}km`}
         </div>
-        {cafe.discountPercent != null && (
-          <div className="absolute top-3 left-3 bg-amber-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+        {showDiscount && (
+          <div
+            className="absolute top-3 left-3 bg-amber-500 text-white text-xs font-bold px-2 py-1 rounded-full"
+            title="Descuento exclusivo plan consumidor Premium"
+          >
             -{cafe.discountPercent}%
           </div>
         )}
@@ -38,23 +45,26 @@ export default function CafeteriaCard({ cafe }) {
 
       <div className="p-4">
         <div className="flex items-start justify-between gap-2 mb-1">
-          <h3 className="font-display text-lg font-semibold text-coffee-800 leading-tight">{cafe.name}</h3>
+          <h3 className="font-display text-lg font-semibold text-coffee-800 dark:text-cream-100 leading-tight">{cafe.name}</h3>
           {cafe.rating != null && (
             <div className="flex items-center gap-1 shrink-0">
               <Star size={14} className="fill-amber-400 text-amber-400" />
-              <span className="font-body font-bold text-coffee-700 text-sm">{cafe.rating}</span>
+              <span className="font-body font-bold text-coffee-700 dark:text-cream-200 text-sm">{cafe.rating}</span>
             </div>
           )}
         </div>
-        <p className="text-coffee-500 text-xs font-body mb-2 flex items-center gap-1">
+        <p className="text-coffee-500 dark:text-coffee-300 text-xs font-body mb-2 flex items-center gap-1">
           <MapPin size={11} /> {cafe.neighborhood}
         </p>
-        <p className="text-coffee-600 text-sm font-body line-clamp-2 mb-3 leading-relaxed">
+        <p className="text-coffee-600 dark:text-coffee-200 text-sm font-body line-clamp-2 mb-3 leading-relaxed">
           {cafe.bio.split('\n')[0]}
         </p>
         <div className="flex flex-wrap gap-1.5 mb-4">
           {cafe.tags.slice(0, 3).map(tag => (
-            <span key={tag} className="bg-cream-100 text-coffee-600 text-xs px-2 py-0.5 rounded-full font-body font-medium border border-sand-200 flex items-center gap-1">
+            <span
+              key={tag}
+              className="bg-cream-100 dark:bg-coffee-700 text-coffee-600 dark:text-cream-200 text-xs px-2 py-0.5 rounded-full font-body font-medium border border-sand-200 dark:border-coffee-600 flex items-center gap-1"
+            >
               <Tag size={10} className="opacity-60" />
               {tag}
             </span>

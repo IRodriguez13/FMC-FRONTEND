@@ -10,7 +10,7 @@ export default function StarRating({ rating, max = 5, size = 16, interactive = f
           className={`transition-colors ${
             i < Math.round(rating)
               ? 'text-amber-400 fill-amber-400'
-              : 'text-sand-300 fill-transparent'
+              : 'text-sand-300 dark:text-coffee-600 fill-transparent'
           } ${interactive ? 'cursor-pointer hover:text-amber-300' : ''}`}
           onClick={() => interactive && onChange && onChange(i + 1)}
         />

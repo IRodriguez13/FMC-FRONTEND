@@ -54,21 +54,21 @@ export default function Register() {
         </div>
       </div>
 
-      <div className="flex-1 flex items-center justify-center p-6 bg-cream-50 overflow-y-auto">
+      <div className="flex-1 flex items-center justify-center p-6 bg-cream-50 dark:bg-coffee-900 overflow-y-auto">
         <div className="w-full max-w-md py-8 animate-slide-up">
           <AuthBackLink />
           <div className="lg:hidden flex items-center gap-3 mb-6">
             <Logo size={40} color="#7d5420" />
-            <span className="font-display text-2xl font-bold text-coffee-700">Find My Coffee</span>
+            <span className="font-display text-2xl font-bold text-coffee-800 dark:text-cream-100">Find My Coffee</span>
           </div>
 
-          <h2 className="font-display text-3xl font-bold text-coffee-800 mb-2">Crear cuenta</h2>
-          <p className="font-body text-coffee-500 mb-8">Registro de consumidor (API FMC)</p>
+          <h2 className="font-display text-3xl font-bold text-coffee-900 dark:text-cream-50 mb-2">Crear cuenta</h2>
+          <p className="font-body text-coffee-600 dark:text-coffee-300 mb-8">Registro de consumidor</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block font-body text-sm font-semibold text-coffee-700 mb-1.5">Nombre</label>
+                <label className="block font-body text-sm font-semibold text-coffee-800 dark:text-cream-100 mb-1.5">Nombre</label>
                 <div className="relative">
                   <User size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-coffee-400" />
                   <input
@@ -82,7 +82,7 @@ export default function Register() {
                 {errors.name && <p className="text-red-500 text-xs mt-1 font-body">{errors.name}</p>}
               </div>
               <div>
-                <label className="block font-body text-sm font-semibold text-coffee-700 mb-1.5">Apellido</label>
+                <label className="block font-body text-sm font-semibold text-coffee-800 dark:text-cream-100 mb-1.5">Apellido</label>
                 <input
                   type="text"
                   placeholder="García"
@@ -94,7 +94,7 @@ export default function Register() {
             </div>
 
             <div>
-              <label className="block font-body text-sm font-semibold text-coffee-700 mb-1.5">Correo electrónico</label>
+              <label className="block font-body text-sm font-semibold text-coffee-800 dark:text-cream-100 mb-1.5">Correo electrónico</label>
               <div className="relative">
                 <Mail size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-coffee-400" />
                 <input
@@ -109,7 +109,7 @@ export default function Register() {
             </div>
 
             <div>
-              <label className="block font-body text-sm font-semibold text-coffee-700 mb-1.5">Contraseña</label>
+              <label className="block font-body text-sm font-semibold text-coffee-800 dark:text-cream-100 mb-1.5">Contraseña</label>
               <div className="relative">
                 <Lock size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-coffee-400" />
                 <input
@@ -127,7 +127,7 @@ export default function Register() {
             </div>
 
             <div>
-              <label className="block font-body text-sm font-semibold text-coffee-700 mb-1.5">Confirmar contraseña</label>
+              <label className="block font-body text-sm font-semibold text-coffee-800 dark:text-cream-100 mb-1.5">Confirmar contraseña</label>
               <div className="relative">
                 <Lock size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-coffee-400" />
                 <input
@@ -154,7 +154,7 @@ export default function Register() {
               />
               <label htmlFor="terms" className="font-body text-sm text-coffee-600 leading-relaxed">
                 Acepto los{' '}
-                <Link to="/terms" className="text-coffee-700 font-semibold hover:underline">términos y condiciones</Link>
+                <Link to="/terms" className="text-coffee-800 dark:text-cream-100 font-semibold hover:underline">términos y condiciones</Link>
               </label>
             </div>
             {errors.terms && <p className="text-red-500 text-xs font-body">{errors.terms}</p>}
@@ -176,13 +176,13 @@ export default function Register() {
             </button>
           </form>
 
-          <p className="font-body text-center text-coffee-500 text-sm mt-6">
+          <p className="font-body text-center text-coffee-600 dark:text-coffee-300 text-sm mt-6">
             ¿Ya tenés cuenta?{' '}
-            <Link to="/login" className="text-coffee-700 font-semibold hover:underline">Iniciá sesión</Link>
+            <Link to="/login" className="text-coffee-800 dark:text-cream-100 font-semibold hover:underline">Iniciá sesión</Link>
           </p>
-          <p className="font-body text-center text-coffee-500 text-sm mt-2">
+          <p className="font-body text-center text-coffee-600 dark:text-coffee-300 text-sm mt-2">
             ¿Tenés una cafetería?{' '}
-            <Link to="/register-business" className="text-coffee-700 font-semibold hover:underline">
+            <Link to="/register-business" className="text-coffee-800 dark:text-cream-100 font-semibold hover:underline">
               Registro negocio
             </Link>
           </p>

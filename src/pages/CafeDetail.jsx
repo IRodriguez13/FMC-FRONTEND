@@ -7,6 +7,7 @@ import {
   postCafeteriaReview,
   uploadCafeteriaPhoto,
 } from '../api/cafeteriaMediaApi';
+import CafeCoverImage from '../components/CafeCoverImage';
 import StarRating from '../components/StarRating';
 import { useAuth } from '../context/AuthContext';
 import { useCafeterias } from '../context/CafeteriasContext';
@@ -16,6 +17,19 @@ import { resolveMediaUrl } from '../lib/mediaUrl';
 function authorLabel(role) {
   return role === 'enterprise' ? 'Negocio' : 'Cliente';
 }
+
+function DetailPanel({ children, className = '' }) {
+  return (
+    <section
+      className={`mt-8 rounded-2xl border border-sand-200 dark:border-coffee-600 bg-white dark:bg-coffee-800 p-6 shadow-card ${className}`}
+    >
+      {children}
+    </section>
+  );
+}
+
+const heroIconBtn =
+  'p-2.5 bg-black/45 dark:bg-black/55 backdrop-blur-sm rounded-full text-white shadow-md transition-all hover:bg-black/60 dark:hover:bg-black/70 hover:scale-105';
 
 export default function CafeDetail() {
   const { id } = useParams();
@@ -67,7 +81,7 @@ export default function CafeDetail() {
 
   if (loading && !cafe) {
     return (
-      <div className="min-h-screen flex items-center justify-center font-body text-coffee-500">
+      <div className="min-h-screen flex items-center justify-center font-body text-coffee-600 dark:text-coffee-200">
         Cargando…
       </div>
     );
@@ -75,9 +89,9 @@ export default function CafeDetail() {
 
   if (!cafe) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-cream-100 dark:bg-coffee-900">
         <div className="text-center">
-          <p className="font-display text-2xl text-coffee-700 mb-4">Cafetería no encontrada</p>
+          <p className="font-display text-2xl text-coffee-800 dark:text-cream-100 mb-4">Cafetería no encontrada</p>
           <Link to="/explore" className="btn-primary">Volver al explorador</Link>
         </div>
       </div>
@@ -109,6 +123,20 @@ export default function CafeDetail() {
     }
   };
 
+  const handleShare = async () => {
+    const url = window.location.href;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: cafe.name, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        setActionMessage('Enlace copiado al portapapeles.');
+      }
+    } catch {
+      /* usuario canceló share */
+    }
+  };
+
   const handlePhotoSelect = async (e) => {
     const file = e.target.files?.[0];
     e.target.value = '';
@@ -130,97 +158,137 @@ export default function CafeDetail() {
   };
 
   return (
-    <div className="min-h-screen bg-cream-50">
-      <div className="relative h-72 md:h-96 overflow-hidden">
-        <img src={coverSrc} alt={cafe.name} className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+    <div className="min-h-screen bg-cream-100 dark:bg-coffee-900">
+      <div className="relative h-72 md:h-96 overflow-hidden bg-coffee-800">
+        <CafeCoverImage src={coverSrc} alt={cafe.name} className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent" />
 
-        <div className="absolute top-4 left-4 right-4 flex justify-between items-center">
-          <button
-            onClick={() => navigate(-1)}
-            className="p-2.5 bg-white/90 backdrop-blur-sm rounded-full text-coffee-700 hover:bg-white transition-all shadow-md"
-          >
+        <div className="absolute top-4 left-4 right-4 flex justify-between items-center z-10">
+          <button type="button" onClick={() => navigate(-1)} className={heroIconBtn} aria-label="Volver">
             <ArrowLeft size={18} />
           </button>
           <div className="flex gap-2">
-            <button className="p-2.5 bg-white/90 backdrop-blur-sm rounded-full text-coffee-700 hover:bg-white transition-all shadow-md">
+            <button type="button" onClick={handleShare} className={heroIconBtn} aria-label="Compartir">
               <Share2 size={18} />
             </button>
             {user && (
               <button
+                type="button"
                 onClick={() => toggleFavorite(cafe.id)}
-                className={`p-2.5 rounded-full backdrop-blur-sm transition-all shadow-md ${
-                  fav ? 'bg-red-500 text-white' : 'bg-white/90 text-coffee-700 hover:bg-white'
-                }`}
+                className={
+                  fav
+                    ? 'p-2.5 rounded-full bg-red-500 text-white shadow-md transition-all hover:bg-red-600 hover:scale-105'
+                    : heroIconBtn
+                }
+                aria-label={fav ? 'Quitar de favoritos' : 'Agregar a favoritos'}
               >
                 <Heart size={18} className={fav ? 'fill-white' : ''} />
               </button>
             )}
           </div>
         </div>
-
-        <div className="absolute -bottom-10 left-6">
-          <img
-            src={coverSrc}
-            alt={cafe.name}
-            className="w-20 h-20 rounded-2xl border-4 border-white shadow-lg object-cover"
-          />
-        </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 pt-14 pb-12">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h1 className="font-display text-3xl font-bold text-coffee-800">{cafe.name}</h1>
-            <p className="font-body text-coffee-500 flex items-center gap-1.5 mt-1">
-              <MapPin size={14} /> {cafe.address}
+      <div className="max-w-4xl mx-auto px-4 pb-12">
+        <div className="relative -mt-10 mb-6 flex items-end gap-4">
+          <CafeCoverImage
+            src={coverSrc}
+            alt={cafe.name}
+            className="w-24 h-24 rounded-2xl border-4 border-white dark:border-coffee-700 shadow-lg object-cover shrink-0"
+          />
+          <div className="pb-1 min-w-0 flex-1">
+            <h1 className="font-display text-2xl md:text-3xl font-bold text-coffee-900 dark:text-cream-50 truncate">
+              {cafe.name}
+            </h1>
+            <p className="font-body text-coffee-600 dark:text-coffee-200 flex items-center gap-1.5 mt-1 text-sm">
+              <MapPin size={14} className="shrink-0" />
+              <span className="truncate">{cafe.address}</span>
             </p>
           </div>
           {averageRating != null && (
-            <div className="flex items-center gap-2 bg-white border border-sand-200 rounded-xl px-4 py-2 shadow-sm">
+            <div className="hidden sm:flex items-center gap-2 bg-white dark:bg-coffee-800 border border-sand-200 dark:border-coffee-600 rounded-xl px-4 py-2 shadow-sm shrink-0">
               <StarRating rating={averageRating} size={18} />
-              <span className="font-body text-sm text-coffee-600">
+              <span className="font-body text-sm text-coffee-700 dark:text-cream-100">
                 {averageRating.toFixed(1)} ({totalReviews})
               </span>
             </div>
           )}
         </div>
 
-        <div className="flex flex-wrap gap-2 mt-4">
-          <span className="bg-cream-100 text-coffee-700 text-sm px-3 py-1 rounded-full font-body border border-sand-200">
+        {averageRating != null && (
+          <div className="sm:hidden flex items-center gap-2 mb-4 bg-white dark:bg-coffee-800 border border-sand-200 dark:border-coffee-600 rounded-xl px-4 py-2 shadow-sm w-fit">
+            <StarRating rating={averageRating} size={16} />
+            <span className="font-body text-sm text-coffee-700 dark:text-cream-100">
+              {averageRating.toFixed(1)} ({totalReviews})
+            </span>
+          </div>
+        )}
+
+        <div className="flex flex-wrap gap-2">
+          <span className="bg-white dark:bg-coffee-800 text-coffee-700 dark:text-cream-200 text-sm px-3 py-1 rounded-full font-body border border-sand-200 dark:border-coffee-600">
             {cafe.distance < 1000 ? `${cafe.distance} m` : `${(cafe.distance / 1000).toFixed(1)} km`}
           </span>
-          <span className="bg-cream-100 text-coffee-700 text-sm px-3 py-1 rounded-full font-body border border-sand-200">
+          <span className="bg-white dark:bg-coffee-800 text-coffee-700 dark:text-cream-200 text-sm px-3 py-1 rounded-full font-body border border-sand-200 dark:border-coffee-600">
             Enterprise {cafe.subscriptionTier}
           </span>
-          {cafe.discountPercent != null && (
-            <span className="bg-amber-100 text-amber-800 text-sm px-3 py-1 rounded-full font-body font-semibold">
-              {cafe.discountPercent}% de descuento (Premium)
+          {cafe.discountPercent != null && user?.premium && (
+            <span className="bg-amber-100 dark:bg-amber-900/50 text-amber-900 dark:text-amber-100 text-sm px-3 py-1 rounded-full font-body font-semibold border border-amber-200 dark:border-amber-700">
+              -{cafe.discountPercent}% con tu plan Premium
             </span>
           )}
         </div>
 
-        {cafe.discountPercent == null && user && !user.premium && (
-          <p className="mt-4 font-body text-sm text-coffee-500 bg-cream-100 border border-sand-200 rounded-xl px-4 py-3">
-            Los descuentos solo se muestran con plan consumidor Premium. Actualizá tu tier desde el perfil.
+        {user?.premium && cafe.discountPercent != null && (
+          <div className="mt-4 rounded-2xl border-2 border-amber-400/50 dark:border-amber-600/60 bg-amber-50 dark:bg-amber-950/40 px-4 py-4 flex items-start gap-3">
+            <Tag size={20} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-display font-semibold text-amber-900 dark:text-amber-100">
+                Descuento exclusivo Premium: {cafe.discountPercent}%
+              </p>
+              <p className="font-body text-sm text-amber-800/90 dark:text-amber-200/90 mt-1">
+                Este beneficio solo es visible con tu cuenta Premium. Presentate en el local para acceder al descuento.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {user?.premium && cafe.discountPercent == null && (
+          <p className="mt-4 font-body text-sm text-coffee-600 dark:text-coffee-200 bg-white dark:bg-coffee-800 border border-sand-200 dark:border-coffee-600 rounded-xl px-4 py-3">
+            Este local no tiene descuento activo por ahora. Probá el filtro «Con descuento» en Explorar.
           </p>
         )}
 
-        <section className="mt-8 card p-6">
-          <h2 className="font-display text-xl font-semibold text-coffee-800 mb-3">Acerca de</h2>
-          <p className="font-body text-coffee-600 leading-relaxed whitespace-pre-line">{cafe.description || cafe.bio}</p>
-          <div className="flex flex-wrap gap-2 mt-4">
-            {cafe.tags.map(tag => (
-              <span key={tag} className="flex items-center gap-1 bg-cream-50 text-coffee-600 text-xs px-2 py-1 rounded-full border border-sand-200">
-                <Tag size={10} /> {tag}
-              </span>
-            ))}
-          </div>
-        </section>
+        {cafe.discountPercent == null && user && !user.premium && (
+          <p className="mt-4 font-body text-sm text-coffee-600 dark:text-coffee-200 bg-white dark:bg-coffee-800 border border-sand-200 dark:border-coffee-600 rounded-xl px-4 py-3">
+            Los descuentos comerciales son un beneficio del plan consumidor Premium.{' '}
+            <Link to="/checkout/consumer-premium" className="text-coffee-800 dark:text-cream-50 font-semibold underline">
+              Activar Premium
+            </Link>
+          </p>
+        )}
 
-        <section className="mt-8 card p-6">
+        <DetailPanel>
+          <h2 className="font-display text-xl font-semibold text-coffee-900 dark:text-cream-50 mb-3">Acerca de</h2>
+          <p className="font-body text-coffee-700 dark:text-coffee-100 leading-relaxed whitespace-pre-line">
+            {cafe.description || cafe.bio}
+          </p>
+          <div className="flex flex-wrap gap-2 mt-4">
+            {cafe.tags
+              .filter(tag => user?.premium || !tag.endsWith('% off'))
+              .map(tag => (
+                <span
+                  key={tag}
+                  className="flex items-center gap-1 bg-cream-50 dark:bg-coffee-700 text-coffee-700 dark:text-cream-200 text-xs px-2 py-1 rounded-full border border-sand-200 dark:border-coffee-600"
+                >
+                  <Tag size={10} /> {tag}
+                </span>
+              ))}
+          </div>
+        </DetailPanel>
+
+        <DetailPanel>
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <h2 className="font-display text-xl font-semibold text-coffee-800">Fotos</h2>
+            <h2 className="font-display text-xl font-semibold text-coffee-900 dark:text-cream-50">Fotos</h2>
             {user && (
               <label className="btn-secondary cursor-pointer inline-flex items-center gap-2 text-sm">
                 <Camera size={16} />
@@ -237,9 +305,11 @@ export default function CafeDetail() {
           </div>
 
           {mediaLoading ? (
-            <p className="font-body text-sm text-coffee-400">Cargando fotos…</p>
+            <p className="font-body text-sm text-coffee-500 dark:text-coffee-300">Cargando fotos…</p>
           ) : photos.length === 0 ? (
-            <p className="font-body text-sm text-coffee-500">Todavía no hay fotos. {user ? 'Sé el primero en subir una.' : 'Iniciá sesión para contribuir.'}</p>
+            <p className="font-body text-sm text-coffee-600 dark:text-coffee-200">
+              Todavía no hay fotos. {user ? 'Sé el primero en subir una.' : 'Iniciá sesión para contribuir.'}
+            </p>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {photos.map(photo => (
@@ -248,9 +318,9 @@ export default function CafeDetail() {
                   href={resolveMediaUrl(photo.url)}
                   target="_blank"
                   rel="noreferrer"
-                  className="block aspect-square rounded-xl overflow-hidden border border-sand-200 bg-cream-100"
+                  className="block aspect-square rounded-xl overflow-hidden border border-sand-200 dark:border-coffee-600 bg-coffee-100 dark:bg-coffee-700"
                 >
-                  <img
+                  <CafeCoverImage
                     src={resolveMediaUrl(photo.url)}
                     alt={`Foto de ${cafe.name}`}
                     className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
@@ -259,27 +329,32 @@ export default function CafeDetail() {
               ))}
             </div>
           )}
-        </section>
+        </DetailPanel>
 
-        <section className="mt-8 card p-6">
-          <h2 className="font-display text-xl font-semibold text-coffee-800 mb-4">Reseñas</h2>
+        <DetailPanel>
+          <h2 className="font-display text-xl font-semibold text-coffee-900 dark:text-cream-50 mb-4">Reseñas</h2>
 
           {mediaLoading ? (
-            <p className="font-body text-sm text-coffee-400">Cargando reseñas…</p>
+            <p className="font-body text-sm text-coffee-500 dark:text-coffee-300">Cargando reseñas…</p>
           ) : reviews.length === 0 ? (
-            <p className="font-body text-sm text-coffee-500 mb-6">Sin reseñas todavía.</p>
+            <p className="font-body text-sm text-coffee-600 dark:text-coffee-200 mb-6">Sin reseñas todavía.</p>
           ) : (
             <ul className="space-y-4 mb-6">
               {reviews.map(review => (
-                <li key={review.id} className="border-b border-sand-100 pb-4 last:border-0 last:pb-0">
+                <li
+                  key={review.id}
+                  className="border-b border-sand-200 dark:border-coffee-600 pb-4 last:border-0 last:pb-0"
+                >
                   <div className="flex items-center justify-between gap-2">
                     <StarRating rating={review.rating} size={14} />
-                    <span className="font-body text-xs text-coffee-400">
+                    <span className="font-body text-xs text-coffee-500 dark:text-coffee-300">
                       {authorLabel(review.authorRole)}
                     </span>
                   </div>
                   {review.text && (
-                    <p className="font-body text-coffee-600 text-sm mt-2 leading-relaxed">{review.text}</p>
+                    <p className="font-body text-coffee-700 dark:text-cream-100 text-sm mt-2 leading-relaxed">
+                      {review.text}
+                    </p>
                   )}
                 </li>
               ))}
@@ -287,8 +362,11 @@ export default function CafeDetail() {
           )}
 
           {user ? (
-            <form onSubmit={handleReviewSubmit} className="border-t border-sand-200 pt-6 space-y-4">
-              <p className="font-body text-sm font-medium text-coffee-700">Dejá tu reseña</p>
+            <form
+              onSubmit={handleReviewSubmit}
+              className="border-t border-sand-200 dark:border-coffee-600 pt-6 space-y-4"
+            >
+              <p className="font-body text-sm font-medium text-coffee-800 dark:text-cream-100">Dejá tu reseña</p>
               <StarRating rating={reviewRating} interactive onChange={setReviewRating} size={22} />
               <textarea
                 value={reviewText}
@@ -296,21 +374,28 @@ export default function CafeDetail() {
                 placeholder="Contanos tu experiencia (opcional)"
                 rows={3}
                 maxLength={2000}
-                className="w-full rounded-xl border border-sand-200 px-4 py-3 font-body text-sm text-coffee-700 focus:outline-none focus:ring-2 focus:ring-coffee-300"
+                className="input-field resize-y min-h-[5rem]"
               />
               <button type="submit" className="btn-primary" disabled={submittingReview}>
                 {submittingReview ? 'Guardando…' : 'Publicar reseña'}
               </button>
             </form>
           ) : (
-            <p className="font-body text-sm text-coffee-500 border-t border-sand-200 pt-6">
-              <Link to="/login" className="text-coffee-700 underline">Iniciá sesión</Link> para dejar una reseña o subir fotos.
+            <p className="font-body text-sm text-coffee-600 dark:text-coffee-200 border-t border-sand-200 dark:border-coffee-600 pt-6">
+              <Link to="/login" className="text-coffee-800 dark:text-cream-50 font-semibold underline">
+                Iniciá sesión
+              </Link>{' '}
+              para dejar una reseña o subir fotos.
             </p>
           )}
-        </section>
+        </DetailPanel>
 
         {(mediaError || actionMessage) && (
-          <p className={`mt-4 font-body text-sm text-center ${mediaError ? 'text-red-600' : 'text-green-700'}`}>
+          <p
+            className={`mt-4 font-body text-sm text-center ${
+              mediaError ? 'text-red-600 dark:text-red-300' : 'text-green-700 dark:text-green-300'
+            }`}
+          >
             {mediaError || actionMessage}
           </p>
         )}

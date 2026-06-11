@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { MapPin, User, Heart, LogOut, ChevronDown, Coffee, Star, Menu, X, Store, Compass } from 'lucide-react';
+import { MapPin, User, Heart, LogOut, ChevronDown, Coffee, Star, Menu, X, Store, Compass, CircleHelp } from 'lucide-react';
 import Logo from './Logo';
+import ThemeToggle from './ThemeToggle';
 import { useAuth } from '../context/AuthContext';
 import { getEmail } from '../lib/authStorage';
 
@@ -47,6 +48,10 @@ export default function Navbar() {
             <MapPin size={15} />
             <span>Mapa</span>
           </Link>
+          <Link to="/demo" className="flex items-center gap-1.5 text-cream-200 hover:text-cream-50 transition-colors font-body text-sm">
+            <CircleHelp size={15} />
+            <span>Ayuda</span>
+          </Link>
           {isConsumer && (
             <Link to="/favorites" className="flex items-center gap-1.5 text-cream-200 hover:text-cream-50 transition-colors font-body text-sm">
               <Heart size={15} />
@@ -61,7 +66,8 @@ export default function Navbar() {
           )}
         </nav>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <ThemeToggle className="hidden sm:flex" />
           {user || (token && authLoading) ? (
             <>
               <p
@@ -104,7 +110,7 @@ export default function Navbar() {
                           <Heart size={15} className="text-coffee-400" /> Favoritos
                         </Link>
                         {!user.premium && (
-                          <Link to="/profile" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-amber-600 hover:bg-amber-50 font-body text-sm font-semibold">
+                          <Link to="/checkout/consumer-premium" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-amber-600 hover:bg-amber-50 font-body text-sm font-semibold">
                             <Star size={15} className="fill-amber-400" /> Plan Premium
                           </Link>
                         )}
@@ -145,6 +151,8 @@ export default function Navbar() {
         <div className="md:hidden bg-coffee-700 border-t border-coffee-600 px-4 py-4 flex flex-col gap-3 animate-slide-down">
           <Link to="/explore" onClick={() => setMenuOpen(false)} className="text-cream-200 font-body">Explorar</Link>
           <Link to="/map" onClick={() => setMenuOpen(false)} className="text-cream-200 font-body">Mapa</Link>
+          <Link to="/demo" onClick={() => setMenuOpen(false)} className="text-cream-200 font-body">Ayuda</Link>
+          <ThemeToggle />
           {isConsumer && <Link to="/favorites" onClick={() => setMenuOpen(false)} className="text-cream-200 font-body">Favoritos</Link>}
           {isEnterprise && <Link to="/enterprise" onClick={() => setMenuOpen(false)} className="text-cream-200 font-body">Mi cafetería</Link>}
           {!user && (

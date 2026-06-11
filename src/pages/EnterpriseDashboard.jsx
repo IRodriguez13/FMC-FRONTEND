@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Store, Save, Star, MapPin, AlertCircle, CheckCircle2, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -128,7 +128,7 @@ export default function EnterpriseDashboard() {
             <button
               type="button"
               disabled={tierLoading || cafe.subscriptionTier === 'Premium'}
-              onClick={() => handleTier('Premium')}
+              onClick={() => navigate('/checkout/enterprise-premium')}
               className="btn-primary text-sm py-2 flex items-center gap-1"
             >
               <Star size={14} /> Premium

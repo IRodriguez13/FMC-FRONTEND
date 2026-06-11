@@ -7,23 +7,23 @@
     box-sizing: border-box;
   }
   body {
-    @apply bg-cream-100 text-coffee-800 font-body;
+    @apply bg-cream-100 text-coffee-800 font-body dark:bg-coffee-900 dark:text-cream-100;
     -webkit-font-smoothing: antialiased;
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply bg-coffee-600 hover:bg-coffee-700 text-cream-50 font-body font-semibold px-6 py-3 rounded-xl transition-all duration-200 shadow-coffee hover:shadow-coffee-lg hover:-translate-y-0.5 active:translate-y-0;
+    @apply bg-coffee-600 hover:bg-coffee-700 text-cream-50 font-body font-semibold px-6 py-3 rounded-xl transition-colors duration-200 shadow-coffee hover:shadow-coffee-lg active:translate-y-0 dark:bg-coffee-500 dark:hover:bg-coffee-400 dark:text-cream-50 dark:shadow-none;
   }
   .btn-secondary {
-    @apply border-2 border-coffee-400 text-coffee-600 hover:bg-coffee-50 font-body font-semibold px-6 py-3 rounded-xl transition-all duration-200;
+    @apply border-2 border-coffee-400 bg-transparent text-coffee-600 hover:bg-coffee-50 font-body font-semibold px-6 py-3 rounded-xl transition-colors duration-200 dark:border-coffee-400 dark:text-cream-100 dark:hover:bg-coffee-700 dark:hover:border-cream-200/70 dark:hover:text-cream-50;
   }
   .input-field {
-    @apply w-full px-4 py-3 rounded-xl border border-sand-300 bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-coffee-400 focus:border-transparent transition-all duration-200 font-body text-coffee-800 placeholder-coffee-400;
+    @apply w-full px-4 py-3 rounded-xl border border-sand-300 bg-white text-coffee-900 placeholder-coffee-500 focus:outline-none focus:ring-2 focus:ring-coffee-400 focus:border-transparent transition-all duration-200 font-body dark:bg-coffee-700 dark:border-coffee-500 dark:text-cream-50 dark:placeholder-coffee-300 dark:focus:ring-coffee-400;
   }
   .card {
-    @apply bg-white/80 backdrop-blur-sm rounded-2xl shadow-card border border-sand-200 transition-all duration-300 hover:shadow-card-hover;
+    @apply bg-white/80 backdrop-blur-sm rounded-2xl shadow-card border border-sand-200 transition-all duration-300 hover:shadow-card-hover dark:bg-coffee-800/90 dark:border-coffee-700 dark:hover:border-coffee-600 dark:shadow-none;
   }
   .star-filled {
     @apply text-amber-400 fill-amber-400;

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, AlertCircle, User, Store } from 'lucide-react';
 import Logo from '../components/Logo';
 import AuthBackLink from '../components/AuthBackLink';
@@ -9,6 +9,8 @@ import { ApiError } from '../lib/apiClient';
 export default function Login() {
   const { loginConsumer, loginEnterprise } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnTo = location.state?.from;
   const [mode, setMode] = useState('consumer');
   const [form, setForm] = useState({ email: '', password: '' });
   const [showPass, setShowPass] = useState(false);
@@ -24,10 +26,10 @@ export default function Login() {
     try {
       if (mode === 'consumer') {
         await loginConsumer(form.email, form.password);
-        navigate('/explore');
+        navigate(returnTo || '/explore');
       } else {
         await loginEnterprise(form.email, form.password);
-        navigate('/enterprise');
+        navigate(returnTo || '/enterprise');
       }
     } catch (err) {
       setError(
@@ -51,24 +53,26 @@ export default function Login() {
         </div>
       </div>
 
-      <div className="flex-1 flex items-center justify-center p-6 bg-cream-50">
+      <div className="flex-1 flex items-center justify-center p-6 bg-cream-50 dark:bg-coffee-900">
         <div className="w-full max-w-md animate-slide-up">
           <AuthBackLink />
 
           <div className="lg:hidden flex items-center gap-3 mb-6">
             <Logo size={40} color="#7d5420" />
-            <span className="font-display text-2xl font-bold text-coffee-700">Find My Coffee</span>
+            <span className="font-display text-2xl font-bold text-coffee-800 dark:text-cream-100">Find My Coffee</span>
           </div>
 
-          <h2 className="font-display text-3xl font-bold text-coffee-800 mb-2">Bienvenido de vuelta</h2>
-          <p className="font-body text-coffee-500 mb-4">Elegí el tipo de cuenta</p>
+          <h2 className="font-display text-3xl font-bold text-coffee-900 dark:text-cream-50 mb-2">Bienvenido de vuelta</h2>
+          <p className="font-body text-coffee-600 dark:text-coffee-200 mb-4">Elegí el tipo de cuenta</p>
 
-          <div className="flex gap-2 mb-6 p-1 bg-cream-100 rounded-xl border border-sand-200">
+          <div className="flex gap-2 mb-6 p-1 bg-cream-100 dark:bg-coffee-800 rounded-xl border border-sand-200 dark:border-coffee-600">
             <button
               type="button"
               onClick={() => { setMode('consumer'); setError(''); }}
               className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg font-body text-sm font-semibold transition-all ${
-                mode === 'consumer' ? 'bg-white text-coffee-800 shadow-sm' : 'text-coffee-500'
+                mode === 'consumer'
+                  ? 'bg-white dark:bg-coffee-600 text-coffee-900 dark:text-cream-50 shadow-sm'
+                  : 'text-coffee-600 dark:text-coffee-300 hover:text-coffee-800 dark:hover:text-cream-100'
               }`}
             >
               <User size={16} /> Consumidor
@@ -77,24 +81,26 @@ export default function Login() {
               type="button"
               onClick={() => { setMode('enterprise'); setError(''); }}
               className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg font-body text-sm font-semibold transition-all ${
-                mode === 'enterprise' ? 'bg-white text-coffee-800 shadow-sm' : 'text-coffee-500'
+                mode === 'enterprise'
+                  ? 'bg-white dark:bg-coffee-600 text-coffee-900 dark:text-cream-50 shadow-sm'
+                  : 'text-coffee-600 dark:text-coffee-300 hover:text-coffee-800 dark:hover:text-cream-100'
               }`}
             >
               <Store size={16} /> Negocio
             </button>
           </div>
 
-          <p className="font-body text-coffee-400 text-xs mb-6">
-            Demo {mode === 'consumer' ? 'consumidor' : 'enterprise'}@seed.fmc / SeedPass-123
+          <p className="font-body text-coffee-600 dark:text-coffee-300 text-xs mb-6 font-mono">
+            {mode === 'consumer' ? 'consumidor' : 'enterprise'}@seed.fmc / SeedPass-123
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block font-body text-sm font-semibold text-coffee-700 mb-1.5">
+              <label className="block font-body text-sm font-semibold text-coffee-800 dark:text-cream-100 mb-1.5">
                 Correo electrónico
               </label>
               <div className="relative">
-                <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-coffee-400" />
+                <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-coffee-500 dark:text-coffee-300 pointer-events-none" />
                 <input
                   type="email"
                   placeholder="tu@email.com"
@@ -106,11 +112,11 @@ export default function Login() {
             </div>
 
             <div>
-              <label className="block font-body text-sm font-semibold text-coffee-700 mb-1.5">
+              <label className="block font-body text-sm font-semibold text-coffee-800 dark:text-cream-100 mb-1.5">
                 Contraseña
               </label>
               <div className="relative">
-                <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-coffee-400" />
+                <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-coffee-500 dark:text-coffee-300 pointer-events-none" />
                 <input
                   type={showPass ? 'text' : 'password'}
                   placeholder="••••••••"
@@ -121,7 +127,7 @@ export default function Login() {
                 <button
                   type="button"
                   onClick={() => setShowPass(!showPass)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-coffee-400 hover:text-coffee-600"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-coffee-500 dark:text-coffee-300 hover:text-coffee-700 dark:hover:text-cream-100"
                 >
                   {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -129,7 +135,7 @@ export default function Login() {
             </div>
 
             {error && (
-              <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl font-body text-sm">
+              <div className="flex items-center gap-2 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 px-4 py-3 rounded-xl font-body text-sm">
                 <AlertCircle size={15} />
                 {error}
               </div>
@@ -148,11 +154,11 @@ export default function Login() {
           </form>
 
           <div className="mt-6 text-center space-y-2">
-            <p className="font-body text-coffee-500 text-sm">
+            <p className="font-body text-coffee-600 dark:text-coffee-300 text-sm">
               ¿No tenés cuenta?{' '}
               <Link
                 to={mode === 'consumer' ? '/register' : '/register-business'}
-                className="text-coffee-700 font-semibold hover:underline"
+                className="text-coffee-800 dark:text-cream-100 font-semibold hover:underline"
               >
                 Registrate
               </Link>
