@@ -1,4 +1,4 @@
-# Find My Coffee — Frontend jdsfjf
+# Find My Coffee — Frontend 
 
 SPA **React 18 + Vite** para descubrir cafeterías en **CABA**, integrada con el API [`fmcbackend`](../fmcbackend).
 
