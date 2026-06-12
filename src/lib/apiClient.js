@@ -48,7 +48,8 @@ export async function apiRequest(path, { method = 'GET', body, token, signal } =
       (typeof data === 'string' ? data : null) ||
       `Error ${res.status}`;
     const err = new ApiError(msg, res.status, data);
-    if (res.status === 401 || res.status === 404) err.sessionExpired = true;
+    // Solo rutas autenticadas: 401/404 en login/register son credenciales, no sesión vencida.
+    if (token && (res.status === 401 || res.status === 404)) err.sessionExpired = true;
     throw err;
   }
 
@@ -89,7 +90,7 @@ export async function apiUpload(path, { file, fieldName = 'file', token, signal 
       (typeof data === 'string' ? data : null) ||
       `Error ${res.status}`;
     const err = new ApiError(msg, res.status, data);
-    if (res.status === 401 || res.status === 404) err.sessionExpired = true;
+    if (token && (res.status === 401 || res.status === 404)) err.sessionExpired = true;
     throw err;
   }
 

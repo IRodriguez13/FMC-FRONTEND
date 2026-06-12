@@ -8,13 +8,7 @@ import {
   LogIn,
   Compass,
 } from 'lucide-react';
-
-const ACCOUNTS = [
-  { role: 'Consumidor Free', email: 'consumidor@seed.fmc', password: 'SeedPass-123' },
-  { role: 'Consumidor Premium', email: 'consumidor-premium@seed.fmc', password: 'SeedPass-123' },
-  { role: 'Enterprise Standard', email: 'enterprise-standard@seed.fmc', password: 'SeedPass-123' },
-  { role: 'Enterprise Premium', email: 'enterprise-premium@seed.fmc', password: 'SeedPass-123' },
-];
+import { DEMO_ACCOUNTS, DEMO_PASSWORD } from '../data/demoAccounts';
 
 const FLOW = [
   { icon: LogIn, title: 'Iniciá sesión', desc: 'Elegí una cuenta de la tabla inferior.' },
@@ -65,6 +59,11 @@ export default function Demo() {
         <h2 className="font-display text-xl font-bold text-coffee-800 dark:text-cream-100 mb-4 flex items-center gap-2">
           <Coffee size={20} /> Cuentas de acceso
         </h2>
+        <p className="font-body text-xs text-coffee-500 dark:text-coffee-400 mb-4 leading-relaxed">
+          Contraseña común seed: <span className="font-mono">{DEMO_PASSWORD}</span>.
+          En login, elegí pestaña <strong>Consumidor</strong> o <strong>Negocio</strong> según la columna «Rol».
+          Si falla el acceso, reiniciá el backend o ejecutá <span className="font-mono">make reset-db && make up</span> en fmcbackend.
+        </p>
         <table className="w-full text-left font-body text-sm">
           <thead>
             <tr className="text-coffee-500 dark:text-coffee-400 border-b border-sand-200 dark:border-coffee-700">
@@ -74,7 +73,7 @@ export default function Demo() {
             </tr>
           </thead>
           <tbody className="text-coffee-700 dark:text-cream-200">
-            {ACCOUNTS.map((row) => (
+            {DEMO_ACCOUNTS.map((row) => (
               <tr key={row.email} className="border-b border-sand-100 dark:border-coffee-800 last:border-0">
                 <td className="py-2.5 pr-4 font-medium">{row.role}</td>
                 <td className="py-2.5 pr-4 font-mono text-xs">{row.email}</td>

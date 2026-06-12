@@ -1,32 +1,66 @@
 import { ApiError } from './apiClient';
 
-/** Mensajes del backend → copy para la persona usuaria (sin jerga técnica). */
+/**
+ * Mapa opcional backend detail → copy UX.
+ * Si no hay entrada, se muestra el detail del backend (si es seguro).
+ * Fuente: fmcbackend Application/Services, Endpoints, CabaServiceArea.
+ */
 const BACKEND_DETAIL_MAP = {
   'Credenciales inválidas.': 'Email o contraseña incorrectos.',
+  'Token inválido.': 'Tu sesión no es válida. Volvé a iniciar sesión.',
+  'Rol no autorizado.': 'Tu cuenta no tiene permiso para esta acción.',
   'El correo ya está registrado.': 'Ese correo ya tiene una cuenta. Probá iniciar sesión.',
   'Usuario no encontrado.': 'Tu sesión venció. Volvé a iniciar sesión.',
   'Cuenta enterprise no encontrada.': 'No encontramos tu cuenta de negocio. Volvé a iniciar sesión.',
   'Cafetería no encontrada.': 'No encontramos esa cafetería.',
+  'Reseña no encontrada.': 'No encontramos esa reseña.',
+  'No podés modificar esta reseña.': 'Solo podés editar o eliminar tus propias reseñas.',
   'Archivo vacío.': 'Elegí una imagen antes de subir.',
   'Formato no permitido. Usá JPEG, PNG o WebP.': 'La imagen debe ser JPG, PNG o WebP.',
+  'Formato no permitido.': 'Formato de archivo no permitido.',
   'El nombre no puede estar vacío.': 'Escribí un nombre para mostrar.',
   'El nombre no puede superar 80 caracteres.': 'El nombre es demasiado largo (máximo 80 caracteres).',
   'La valoración debe estar entre 1 y 5.': 'La puntuación debe ser entre 1 y 5 estrellas.',
-  'Demo pública: usá las cuentas seed documentadas en /demo.': 'En la demo usá las cuentas de prueba de la página Ayuda.',
+  'Coordenadas geográficas inválidas.': 'Las coordenadas no son válidas.',
+  'Demo pública: usá las cuentas seed documentadas en /demo.':
+    'En la demo usá las cuentas de prueba de la página Ayuda (/demo).',
 };
 
-function mapBackendDetail(detail) {
-  if (!detail || typeof detail !== 'string') return null;
+const PREFIX_RULES = [
+  {
+    prefix: 'La imagen supera el tamaño máximo',
+    message: 'La imagen es muy pesada. Probá con un archivo más chico.',
+  },
+  {
+    prefix: 'El texto no puede superar',
+    message: 'La reseña es demasiado larga. Acortala e intentá de nuevo.',
+  },
+  {
+    prefix: 'Find My Coffee solo opera en',
+    passThrough: true,
+  },
+];
+
+function isInternalDetail(detail) {
+  if (!detail || typeof detail !== 'string') return true;
+  const trimmed = detail.trim();
+  if (!trimmed || trimmed.startsWith('Error ')) return true;
+  if (/exception|stack trace|sqlite| at \w+\./i.test(trimmed)) return true;
+  return false;
+}
+
+function resolveBackendDetail(detail) {
+  if (isInternalDetail(detail)) return null;
+
   const trimmed = detail.trim();
   if (BACKEND_DETAIL_MAP[trimmed]) return BACKEND_DETAIL_MAP[trimmed];
-  if (trimmed.startsWith('La imagen supera el tamaño máximo')) {
-    return 'La imagen es muy pesada. Probá con un archivo más chico.';
+
+  for (const rule of PREFIX_RULES) {
+    if (!trimmed.startsWith(rule.prefix)) continue;
+    if (rule.passThrough) return trimmed.endsWith('.') ? trimmed : `${trimmed}.`;
+    return rule.message;
   }
-  if (trimmed.startsWith('El texto no puede superar')) {
-    return 'La reseña es demasiado larga. Acortala e intentá de nuevo.';
-  }
-  if (trimmed.startsWith('Error ')) return null;
-  if (/exception|stack|sqlite|jwt|token|http/i.test(trimmed)) return null;
+
   return trimmed.endsWith('.') ? trimmed : `${trimmed}.`;
 }
 
@@ -47,20 +81,17 @@ function messageByStatus(status, fallback) {
 
 /**
  * Convierte errores de red/API en mensajes entendibles para quien usa la app.
+ * Prioriza detail del backend; el mapa UX es opcional.
  * @param {unknown} err
  * @param {string} [fallback] Mensaje si no hay detalle usable
  */
 export function friendlyApiMessage(err, fallback = 'Algo salió mal. Probá de nuevo en un momento.') {
   if (err instanceof ApiError) {
+    const fromBackend = resolveBackendDetail(err.message);
+    if (fromBackend) return fromBackend;
+
     if (err.sessionExpired) {
       return 'Tu sesión venció. Volvé a iniciar sesión.';
-    }
-
-    const mapped = mapBackendDetail(err.message);
-    if (mapped) return mapped;
-
-    if (err.status === 400 && err.message) {
-      return mapBackendDetail(err.message) || fallback;
     }
 
     return messageByStatus(err.status, fallback);
@@ -76,7 +107,7 @@ export function friendlyApiMessage(err, fallback = 'Algo salió mal. Probá de n
 
   const raw = typeof err?.message === 'string' ? err.message.trim() : '';
   if (raw && !raw.startsWith('Error ') && !/failed to fetch/i.test(raw)) {
-    return mapBackendDetail(raw) || fallback;
+    return resolveBackendDetail(raw) || fallback;
   }
 
   return fallback;

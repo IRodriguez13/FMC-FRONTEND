@@ -16,6 +16,21 @@ export function postCafeteriaReview(cafeteriaId, { rating, text }, token) {
   });
 }
 
+export function putCafeteriaReview(cafeteriaId, reviewId, { rating, text }, token) {
+  return apiRequest(`/api/cafeterias/${cafeteriaId}/reviews/${reviewId}`, {
+    method: 'PUT',
+    token,
+    body: { rating, text: text || null },
+  });
+}
+
+export function deleteCafeteriaReview(cafeteriaId, reviewId, token) {
+  return apiRequest(`/api/cafeterias/${cafeteriaId}/reviews/${reviewId}`, {
+    method: 'DELETE',
+    token,
+  });
+}
+
 export function uploadCafeteriaPhoto(cafeteriaId, file, token, signal) {
   return apiUpload(`/api/cafeterias/${cafeteriaId}/photos`, {
     file,

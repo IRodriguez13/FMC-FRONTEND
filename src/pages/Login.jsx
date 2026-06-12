@@ -5,6 +5,7 @@ import Logo from '../components/Logo';
 import AuthBackLink from '../components/AuthBackLink';
 import { useAuth } from '../context/AuthContext';
 import { friendlyApiMessage } from '../lib/userFacingError';
+import { DEMO_CONSUMER_EMAILS, DEMO_PASSWORD } from '../data/demoAccounts';
 
 export default function Login() {
   const { loginConsumer, loginEnterprise } = useAuth();
@@ -88,8 +89,10 @@ export default function Login() {
             </button>
           </div>
 
-          <p className="font-body text-coffee-600 dark:text-coffee-300 text-xs mb-6 font-mono">
-            {mode === 'consumer' ? 'consumidor' : 'enterprise'}@seed.fmc / SeedPass-123
+          <p className="font-body text-coffee-600 dark:text-coffee-300 text-xs mb-6 font-mono leading-relaxed">
+            {mode === 'consumer'
+              ? `${DEMO_CONSUMER_EMAILS.join(' · ')} / ${DEMO_PASSWORD}`
+              : `enterprise-standard@seed.fmc · enterprise-premium@seed.fmc / ${DEMO_PASSWORD}`}
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-5">

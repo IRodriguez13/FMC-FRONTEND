@@ -1,0 +1,29 @@
+---
+description: FMC — inventario de detail del backend y helper de errores en el front
+globs: src/lib/userFacingError.js,src/lib/apiClient.js,src/api/**/*.js,src/pages/Login.jsx,src/pages/Register*.jsx
+alwaysApply: false
+---
+
+# FMC — errores API
+
+**Helper canónico:** `src/lib/userFacingError.js` (`friendlyApiMessage`).
+
+**Fuente de verdad backend:** excepciones en `fmcbackend/Application/Services/*`, `Api/Endpoints/*`, `Domain/Constants/CabaServiceArea.cs`; middleware `ExceptionHandlingMiddleware.cs` serializa `ex.Message` en `detail`.
+
+## Inventario `detail` (mantener sincronizado)
+
+| detail (backend) | UX en front |
+|------------------|-------------|
+| Credenciales inválidas. | Email o contraseña incorrectos. |
+| Token inválido. | Tu sesión no es válida. Volvé a iniciar sesión. |
+| Rol no autorizado. | Tu cuenta no tiene permiso para esta acción. |
+| Usuario no encontrado. | Tu sesión venció… (solo con token) |
+| Cuenta enterprise no encontrada. | No encontramos tu cuenta de negocio… |
+| Cafetería no encontrada. | No encontramos esa cafetería. |
+| Reseña no encontrada. | No encontramos esa reseña. |
+| No podés modificar esta reseña. | Solo podés editar o eliminar tus propias reseñas. |
+| El correo ya está registrado. | Ese correo ya tiene una cuenta… |
+| Demo pública: usá las cuentas seed… | En la demo usá las cuentas de /demo |
+| Archivo vacío. / Formatos imagen / nombre / valoración / CABA | ver mapa en `userFacingError.js` |
+
+**Cuentas seed:** `fmcbackend/Infrastructure/Persistence/DataSeeder.cs` → `src/data/demoAccounts.js`.

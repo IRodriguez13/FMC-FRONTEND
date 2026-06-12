@@ -186,7 +186,7 @@ export default function Profile() {
               </label>
             </div>
             <div className="flex-1 min-w-0">
-              <h2 className="font-display text-xl font-bold text-coffee-900 dark:text-cream-50 truncate">{user.name}</h2>
+              <h2 className="font-display text-xl font-bold leading-snug text-coffee-900 dark:text-cream-50 line-clamp-2">{user.name}</h2>
               <p className="font-body text-coffee-600 dark:text-coffee-300 text-sm truncate">{user.email}</p>
               <span
                 className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full mt-1 ${

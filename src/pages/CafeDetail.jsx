@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Camera, Heart, MapPin, Share2, Tag } from 'lucide-react';
+import { ArrowLeft, Camera, Download, Heart, MapPin, Pencil, Share2, Star, Tag, Trash2, X } from 'lucide-react';
 import {
+  deleteCafeteriaReview,
   fetchCafeteriaPhotos,
   fetchCafeteriaReviews,
   postCafeteriaReview,
+  putCafeteriaReview,
   uploadCafeteriaPhoto,
 } from '../api/cafeteriaMediaApi';
 import CafeCoverImage from '../components/CafeCoverImage';
+import ConfirmDialog from '../components/ConfirmDialog';
 import StarRating from '../components/StarRating';
 import { useAuth } from '../context/AuthContext';
 import { useCafeterias } from '../context/CafeteriasContext';
@@ -16,6 +19,11 @@ import { resolveMediaUrl } from '../lib/mediaUrl';
 
 function authorLabel(role) {
   return role === 'enterprise' ? 'Negocio' : 'Cliente';
+}
+
+function isOwnReview(review, user) {
+  if (!user) return false;
+  return String(review.authorUserId) === String(user.id) && review.authorRole === user.role;
 }
 
 function DetailPanel({ children, className = '' }) {
@@ -45,9 +53,16 @@ export default function CafeDetail() {
   const [mediaLoading, setMediaLoading] = useState(true);
   const [mediaError, setMediaError] = useState('');
 
-  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewRating, setReviewRating] = useState(0);
   const [reviewText, setReviewText] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
+  const [editingReviewId, setEditingReviewId] = useState(null);
+  const [editRating, setEditRating] = useState(5);
+  const [editText, setEditText] = useState('');
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [deletingReviewId, setDeletingReviewId] = useState(null);
+  const [deleteConfirmReviewId, setDeleteConfirmReviewId] = useState(null);
+  const [downloadingCoupon, setDownloadingCoupon] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [actionMessage, setActionMessage] = useState('');
 
@@ -102,11 +117,19 @@ export default function CafeDetail() {
   const coverSrc = photos.length
     ? resolveMediaUrl(photos[0].url)
     : cafe.coverImage;
+  const ownReview = user ? reviews.find(r => isOwnReview(r, user)) : null;
+  const isConsumerPremium = user?.premium && user?.role === 'consumer';
+  const isConsumerFree = user?.role === 'consumer' && !user.premium;
+  const checkoutReturn = `/cafe/${id}`;
 
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
     if (!token) {
       navigate('/login');
+      return;
+    }
+    if (reviewRating < 1) {
+      setActionMessage('Elegí una puntuación de 1 a 5 estrellas.');
       return;
     }
     setSubmittingReview(true);
@@ -115,11 +138,96 @@ export default function CafeDetail() {
       await postCafeteriaReview(id, { rating: reviewRating, text: reviewText }, token);
       setActionMessage('Reseña guardada.');
       setReviewText('');
+      setReviewRating(0);
       await loadMedia();
     } catch (err) {
       setActionMessage(friendlyApiMessage(err, 'No pudimos publicar tu reseña. Probá de nuevo.'));
     } finally {
       setSubmittingReview(false);
+    }
+  };
+
+  const startEditReview = (review) => {
+    setEditingReviewId(review.id);
+    setEditRating(review.rating);
+    setEditText(review.text ?? '');
+    setActionMessage('');
+  };
+
+  const cancelEditReview = () => {
+    setEditingReviewId(null);
+    setEditRating(0);
+    setEditText('');
+  };
+
+  const handleReviewEditSave = async (e) => {
+    e.preventDefault();
+    if (!token || !editingReviewId) return;
+    if (editRating < 1) {
+      setActionMessage('Elegí una puntuación de 1 a 5 estrellas.');
+      return;
+    }
+    setSavingEdit(true);
+    setActionMessage('');
+    try {
+      await putCafeteriaReview(id, editingReviewId, { rating: editRating, text: editText }, token);
+      setActionMessage('Reseña actualizada.');
+      cancelEditReview();
+      await loadMedia();
+    } catch (err) {
+      setActionMessage(friendlyApiMessage(err, 'No pudimos actualizar tu reseña. Probá de nuevo.'));
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const requestReviewDelete = (reviewId) => {
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+    setDeleteConfirmReviewId(reviewId);
+    setActionMessage('');
+  };
+
+  const cancelReviewDelete = () => {
+    if (deletingReviewId) return;
+    setDeleteConfirmReviewId(null);
+  };
+
+  const confirmReviewDelete = async () => {
+    if (!token || !deleteConfirmReviewId) return;
+    const reviewId = deleteConfirmReviewId;
+    setDeletingReviewId(reviewId);
+    setActionMessage('');
+    try {
+      await deleteCafeteriaReview(id, reviewId, token);
+      if (editingReviewId === reviewId) cancelEditReview();
+      setDeleteConfirmReviewId(null);
+      setActionMessage('Reseña eliminada.');
+      await loadMedia();
+    } catch (err) {
+      setActionMessage(friendlyApiMessage(err, 'No pudimos eliminar tu reseña. Probá de nuevo.'));
+    } finally {
+      setDeletingReviewId(null);
+    }
+  };
+
+  const handleDownloadCoupon = async () => {
+    if (!user?.premium || cafe.discountPercent == null) return;
+    setDownloadingCoupon(true);
+    setActionMessage('');
+    try {
+      const { downloadDiscountCoupon } = await import('../lib/discountCouponPdf');
+      await downloadDiscountCoupon(
+        { name: cafe.name, address: cafe.address, discountPercent: cafe.discountPercent },
+        { name: user.name, email: user.email }
+      );
+      setActionMessage('Cupón descargado.');
+    } catch (err) {
+      setActionMessage(friendlyApiMessage(err, 'No pudimos generar el cupón. Probá de nuevo.'));
+    } finally {
+      setDownloadingCoupon(false);
     }
   };
 
@@ -190,14 +298,14 @@ export default function CafeDetail() {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 pb-12">
-        <div className="relative -mt-10 mb-6 flex items-end gap-4">
+        <div className="relative mb-6 flex items-start gap-4">
           <CafeCoverImage
             src={coverSrc}
             alt={cafe.name}
-            className="w-24 h-24 rounded-2xl border-4 border-white dark:border-coffee-700 shadow-lg object-cover shrink-0"
+            className="w-24 h-24 -mt-10 rounded-2xl border-4 border-white dark:border-coffee-700 shadow-lg object-cover shrink-0"
           />
-          <div className="pb-1 min-w-0 flex-1">
-            <h1 className="font-display text-2xl md:text-3xl font-bold text-coffee-900 dark:text-cream-50 truncate">
+          <div className="pt-8 min-w-0 flex-1">
+            <h1 className="font-display text-2xl md:text-3xl font-bold leading-snug text-coffee-900 dark:text-cream-50 line-clamp-2">
               {cafe.name}
             </h1>
             <p className="font-body text-coffee-600 dark:text-coffee-200 flex items-center gap-1.5 mt-1 text-sm">
@@ -206,7 +314,7 @@ export default function CafeDetail() {
             </p>
           </div>
           {averageRating != null && (
-            <div className="hidden sm:flex items-center gap-2 bg-white dark:bg-coffee-800 border border-sand-200 dark:border-coffee-600 rounded-xl px-4 py-2 shadow-sm shrink-0">
+            <div className="hidden sm:flex items-center gap-2 bg-white dark:bg-coffee-800 border border-sand-200 dark:border-coffee-600 rounded-xl px-4 py-2 shadow-sm shrink-0 mt-8">
               <StarRating rating={averageRating} size={18} />
               <span className="font-body text-sm text-coffee-700 dark:text-cream-100">
                 {averageRating.toFixed(1)} ({totalReviews})
@@ -238,32 +346,84 @@ export default function CafeDetail() {
           )}
         </div>
 
-        {user?.premium && cafe.discountPercent != null && (
-          <div className="mt-4 rounded-2xl border-2 border-amber-400/50 dark:border-amber-600/60 bg-amber-50 dark:bg-amber-950/40 px-4 py-4 flex items-start gap-3">
-            <Tag size={20} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-            <div>
-              <p className="font-display font-semibold text-amber-900 dark:text-amber-100">
-                Descuento exclusivo Premium: {cafe.discountPercent}%
-              </p>
-              <p className="font-body text-sm text-amber-800/90 dark:text-amber-200/90 mt-1">
-                Este beneficio solo es visible con tu cuenta Premium. Presentate en el local para acceder al descuento.
-              </p>
+        {isConsumerPremium && cafe.discountPercent != null && (
+          <div className="mt-4 rounded-2xl border-2 border-amber-400/50 dark:border-amber-600/60 bg-amber-50 dark:bg-amber-950/40 px-4 py-4 flex flex-col sm:flex-row sm:items-center gap-4">
+            <div className="flex items-start gap-3 flex-1 min-w-0">
+              <Tag size={20} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-display font-semibold text-amber-900 dark:text-amber-100">
+                  Descuento exclusivo Premium: {cafe.discountPercent}%
+                </p>
+                <p className="font-body text-sm text-amber-800/90 dark:text-amber-200/90 mt-1">
+                  Presentate en el local o descargá el cupón en PDF.
+                </p>
+              </div>
             </div>
+            <button
+              type="button"
+              onClick={handleDownloadCoupon}
+              disabled={downloadingCoupon}
+              className="btn-secondary shrink-0 inline-flex items-center justify-center gap-2 text-sm py-2.5 px-4 border-amber-300 dark:border-amber-600 text-amber-900 dark:text-amber-100 hover:bg-amber-100/80 dark:hover:bg-amber-900/40 disabled:opacity-60"
+            >
+              <Download size={16} />
+              {downloadingCoupon ? 'Generando…' : 'Descargar cupón'}
+            </button>
           </div>
         )}
 
-        {user?.premium && cafe.discountPercent == null && (
+        {isConsumerFree && (
+          <div className="mt-4 rounded-2xl border-2 border-amber-400/50 dark:border-amber-600/60 bg-amber-50 dark:bg-amber-950/40 px-4 py-4 flex flex-col sm:flex-row sm:items-center gap-4">
+            <div className="flex items-start gap-3 flex-1 min-w-0">
+              <Tag size={20} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-display font-semibold text-amber-900 dark:text-amber-100">
+                  {cafe.discountPercent != null
+                    ? `Descuento disponible: ${cafe.discountPercent}%`
+                    : 'Descuentos exclusivos Premium'}
+                </p>
+                <p className="font-body text-sm text-amber-800/90 dark:text-amber-200/90 mt-1">
+                  Pasá a Premium para ver el beneficio en este local y descargar tu cupón en PDF.
+                </p>
+              </div>
+            </div>
+            <Link
+              to="/checkout/consumer-premium"
+              state={{ from: checkoutReturn }}
+              className="btn-primary shrink-0 inline-flex items-center justify-center gap-2 text-sm py-2.5 px-4 bg-amber-600 hover:bg-amber-700 border-0"
+            >
+              <Star size={16} className="fill-current" />
+              Pasar a Premium
+            </Link>
+          </div>
+        )}
+
+        {isConsumerPremium && cafe.discountPercent == null && (
           <p className="mt-4 font-body text-sm text-coffee-600 dark:text-coffee-200 bg-white dark:bg-coffee-800 border border-sand-200 dark:border-coffee-600 rounded-xl px-4 py-3">
             Este local no tiene descuento activo por ahora. Probá el filtro «Con descuento» en Explorar.
           </p>
         )}
 
-        {cafe.discountPercent == null && user && !user.premium && (
+        {user && !user.premium && user.role === 'enterprise' && (
+          <p className="mt-4 font-body text-sm text-coffee-600 dark:text-coffee-200 bg-white dark:bg-coffee-800 border border-sand-200 dark:border-coffee-600 rounded-xl px-4 py-3">
+            Los descuentos comerciales son un beneficio del plan consumidor Premium. Iniciá sesión con una cuenta consumidor o{' '}
+            <Link to="/register" className="text-coffee-800 dark:text-cream-50 font-semibold underline">
+              registrate
+            </Link>
+            .
+          </p>
+        )}
+
+        {!user && (
           <p className="mt-4 font-body text-sm text-coffee-600 dark:text-coffee-200 bg-white dark:bg-coffee-800 border border-sand-200 dark:border-coffee-600 rounded-xl px-4 py-3">
             Los descuentos comerciales son un beneficio del plan consumidor Premium.{' '}
-            <Link to="/checkout/consumer-premium" className="text-coffee-800 dark:text-cream-50 font-semibold underline">
-              Activar Premium
+            <Link to="/login" state={{ from: checkoutReturn }} className="text-coffee-800 dark:text-cream-50 font-semibold underline">
+              Iniciá sesión
+            </Link>{' '}
+            o{' '}
+            <Link to="/checkout/consumer-premium" state={{ from: checkoutReturn }} className="text-coffee-800 dark:text-cream-50 font-semibold underline">
+              activá Premium
             </Link>
+            .
           </p>
         )}
 
@@ -332,7 +492,7 @@ export default function CafeDetail() {
         </DetailPanel>
 
         <DetailPanel>
-          <h2 className="font-display text-xl font-semibold text-coffee-900 dark:text-cream-50 mb-4">Reseñas</h2>
+          <h2 className="font-display text-xl font-semibold text-coffee-900 dark:text-cream-50 mb-4 pt-1">Reseñas</h2>
 
           {mediaLoading ? (
             <p className="font-body text-sm text-coffee-500 dark:text-coffee-300">Cargando reseñas…</p>
@@ -340,28 +500,83 @@ export default function CafeDetail() {
             <p className="font-body text-sm text-coffee-600 dark:text-coffee-200 mb-6">Sin reseñas todavía.</p>
           ) : (
             <ul className="space-y-4 mb-6">
-              {reviews.map(review => (
-                <li
-                  key={review.id}
-                  className="border-b border-sand-200 dark:border-coffee-600 pb-4 last:border-0 last:pb-0"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <StarRating rating={review.rating} size={14} />
-                    <span className="font-body text-xs text-coffee-500 dark:text-coffee-300">
-                      {authorLabel(review.authorRole)}
-                    </span>
-                  </div>
-                  {review.text && (
-                    <p className="font-body text-coffee-700 dark:text-cream-100 text-sm mt-2 leading-relaxed">
-                      {review.text}
-                    </p>
-                  )}
-                </li>
-              ))}
+              {reviews.map(review => {
+                const own = isOwnReview(review, user);
+                const isEditing = editingReviewId === review.id;
+
+                return (
+                  <li
+                    key={review.id}
+                    className="border-b border-sand-200 dark:border-coffee-600 pb-4 last:border-0 last:pb-0"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-2 min-w-0">
+                        {!isEditing && <StarRating rating={review.rating} size={14} />}
+                        <span className="font-body text-xs text-coffee-500 dark:text-coffee-300">
+                          {authorLabel(review.authorRole)}
+                        </span>
+                      </div>
+                      {own && !isEditing && (
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => startEditReview(review)}
+                            className="p-1.5 rounded-lg text-coffee-600 dark:text-coffee-300 hover:bg-cream-100 dark:hover:bg-coffee-700 transition-colors"
+                            aria-label="Editar reseña"
+                          >
+                            <Pencil size={15} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => requestReviewDelete(review.id)}
+                            disabled={deletingReviewId === review.id}
+                            className="p-1.5 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors disabled:opacity-50"
+                            aria-label="Eliminar reseña"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {isEditing ? (
+                      <form onSubmit={handleReviewEditSave} className="mt-3 space-y-3">
+                        <StarRating rating={editRating} interactive onChange={setEditRating} size={20} />
+                        <textarea
+                          value={editText}
+                          onChange={e => setEditText(e.target.value)}
+                          placeholder="Contanos tu experiencia (opcional)"
+                          rows={3}
+                          maxLength={2000}
+                          className="input-field resize-y min-h-[5rem]"
+                        />
+                        <div className="flex flex-wrap gap-2">
+                          <button type="submit" className="btn-primary text-sm py-2 px-4" disabled={savingEdit || editRating < 1}>
+                            {savingEdit ? 'Guardando…' : 'Guardar cambios'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={cancelEditReview}
+                            className="btn-secondary text-sm py-2 px-4 inline-flex items-center gap-1"
+                          >
+                            <X size={14} /> Cancelar
+                          </button>
+                        </div>
+                      </form>
+                    ) : (
+                      review.text && (
+                        <p className="font-body text-coffee-700 dark:text-cream-100 text-sm mt-2 leading-relaxed">
+                          {review.text}
+                        </p>
+                      )
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           )}
 
-          {user ? (
+          {user && !ownReview ? (
             <form
               onSubmit={handleReviewSubmit}
               className="border-t border-sand-200 dark:border-coffee-600 pt-6 space-y-4"
@@ -376,10 +591,14 @@ export default function CafeDetail() {
                 maxLength={2000}
                 className="input-field resize-y min-h-[5rem]"
               />
-              <button type="submit" className="btn-primary" disabled={submittingReview}>
+              <button type="submit" className="btn-primary" disabled={submittingReview || reviewRating < 1}>
                 {submittingReview ? 'Guardando…' : 'Publicar reseña'}
               </button>
             </form>
+          ) : user && ownReview ? (
+            <p className="font-body text-sm text-coffee-600 dark:text-coffee-200 border-t border-sand-200 dark:border-coffee-600 pt-6">
+              Ya publicaste una reseña. Usá editar o eliminar en tu reseña de arriba.
+            </p>
           ) : (
             <p className="font-body text-sm text-coffee-600 dark:text-coffee-200 border-t border-sand-200 dark:border-coffee-600 pt-6">
               <Link to="/login" className="text-coffee-800 dark:text-cream-50 font-semibold underline">
@@ -400,6 +619,17 @@ export default function CafeDetail() {
           </p>
         )}
       </div>
+
+      <ConfirmDialog
+        open={deleteConfirmReviewId != null}
+        title="¿Eliminar reseña?"
+        message="Esta acción no se puede deshacer. Tu valoración y comentario se quitarán del local."
+        confirmLabel="Sí, eliminar"
+        cancelLabel="Cancelar"
+        loading={deletingReviewId != null}
+        onConfirm={confirmReviewDelete}
+        onCancel={cancelReviewDelete}
+      />
     </div>
   );
 }
