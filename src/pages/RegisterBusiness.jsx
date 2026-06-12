@@ -4,7 +4,7 @@ import { Mail, Lock, Store, MapPin, AlertCircle } from 'lucide-react';
 import Logo from '../components/Logo';
 import AuthBackLink from '../components/AuthBackLink';
 import { useAuth } from '../context/AuthContext';
-import { ApiError } from '../lib/apiClient';
+import { friendlyApiMessage } from '../lib/userFacingError';
 import { DEFAULT_COORDS } from '../lib/geolocation';
 import { CABA, isWithinCaba } from '../lib/caba';
 
@@ -48,7 +48,7 @@ export default function RegisterBusiness() {
       });
       navigate('/enterprise');
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'No se pudo registrar el negocio.');
+      setError(friendlyApiMessage(err, 'No pudimos registrar tu negocio. Revisá los datos e intentá otra vez.'));
     } finally {
       setLoading(false);
     }
@@ -67,17 +67,17 @@ export default function RegisterBusiness() {
         </div>
       </div>
 
-      <div className="flex-1 flex items-center justify-center p-6 bg-cream-50 overflow-y-auto">
+      <div className="flex-1 flex items-center justify-center p-6 bg-cream-50 dark:bg-coffee-900 overflow-y-auto">
         <div className="w-full max-w-lg py-8 animate-slide-up">
           <AuthBackLink />
-          <h2 className="font-display text-3xl font-bold text-coffee-800 mb-2">Registrar negocio</h2>
-          <p className="font-body text-coffee-500 mb-6">
-            Solo locales en {CABA.displayName}. Centro demo: {DEFAULT_COORDS.lat}, {DEFAULT_COORDS.lng}
+          <h2 className="font-display text-3xl font-bold text-coffee-900 dark:text-cream-50 mb-2">Registrar negocio</h2>
+          <p className="font-body text-coffee-600 dark:text-coffee-300 mb-6">
+            Solo locales en {CABA.displayName}. Referencia: {DEFAULT_COORDS.lat}, {DEFAULT_COORDS.lng}
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block font-body text-sm font-semibold text-coffee-700 mb-1.5">Email</label>
+              <label className="block font-body text-sm font-semibold text-coffee-800 dark:text-cream-100 mb-1.5">Email</label>
               <input
                 type="email"
                 className="input-field"
@@ -87,7 +87,7 @@ export default function RegisterBusiness() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block font-body text-sm font-semibold text-coffee-700 mb-1.5">Contraseña</label>
+                <label className="block font-body text-sm font-semibold text-coffee-800 dark:text-cream-100 mb-1.5">Contraseña</label>
                 <input
                   type="password"
                   className="input-field"
@@ -96,7 +96,7 @@ export default function RegisterBusiness() {
                 />
               </div>
               <div>
-                <label className="block font-body text-sm font-semibold text-coffee-700 mb-1.5">Confirmar</label>
+                <label className="block font-body text-sm font-semibold text-coffee-800 dark:text-cream-100 mb-1.5">Confirmar</label>
                 <input
                   type="password"
                   className="input-field"
@@ -106,7 +106,7 @@ export default function RegisterBusiness() {
               </div>
             </div>
             <div>
-              <label className="block font-body text-sm font-semibold text-coffee-700 mb-1.5">Nombre del local</label>
+              <label className="block font-body text-sm font-semibold text-coffee-800 dark:text-cream-100 mb-1.5">Nombre del local</label>
               <input
                 type="text"
                 className="input-field"
@@ -116,7 +116,7 @@ export default function RegisterBusiness() {
               />
             </div>
             <div>
-              <label className="block font-body text-sm font-semibold text-coffee-700 mb-1.5">Descripción</label>
+              <label className="block font-body text-sm font-semibold text-coffee-800 dark:text-cream-100 mb-1.5">Descripción</label>
               <textarea
                 className="input-field min-h-[80px]"
                 value={form.cafeteriaDescription}
@@ -124,7 +124,7 @@ export default function RegisterBusiness() {
               />
             </div>
             <div>
-              <label className="block font-body text-sm font-semibold text-coffee-700 mb-1.5">Dirección</label>
+              <label className="block font-body text-sm font-semibold text-coffee-800 dark:text-cream-100 mb-1.5">Dirección</label>
               <input
                 type="text"
                 className="input-field"
@@ -134,7 +134,7 @@ export default function RegisterBusiness() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block font-body text-sm font-semibold text-coffee-700 mb-1.5">Latitud</label>
+                <label className="block font-body text-sm font-semibold text-coffee-800 dark:text-cream-100 mb-1.5">Latitud</label>
                 <input
                   type="number"
                   step="any"
@@ -144,7 +144,7 @@ export default function RegisterBusiness() {
                 />
               </div>
               <div>
-                <label className="block font-body text-sm font-semibold text-coffee-700 mb-1.5">Longitud</label>
+                <label className="block font-body text-sm font-semibold text-coffee-800 dark:text-cream-100 mb-1.5">Longitud</label>
                 <input
                   type="number"
                   step="any"
@@ -168,8 +168,8 @@ export default function RegisterBusiness() {
             </button>
           </form>
 
-          <p className="font-body text-center text-sm text-coffee-500 mt-6">
-            ¿Sos consumidor? <Link to="/register" className="font-semibold text-coffee-700 hover:underline">Registro consumidor</Link>
+          <p className="font-body text-center text-sm text-coffee-600 dark:text-coffee-300 mt-6">
+            ¿Sos consumidor? <Link to="/register" className="font-semibold text-coffee-800 dark:text-cream-100 hover:underline">Registro consumidor</Link>
           </p>
         </div>
       </div>

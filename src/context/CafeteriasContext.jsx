@@ -1,6 +1,7 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { fetchNearbyCafeterias } from '../api/discoveryApi';
 import { mapNearbyResponse } from '../lib/cafeteriaMapper';
+import { fetchWithRetry, friendlyApiMessage } from '../lib/fetchWithRetry';
 import { getCurrentCoords } from '../lib/geolocation';
 import { useAuth } from './AuthContext';
 
@@ -14,21 +15,25 @@ export function CafeteriasProvider({ children }) {
   const [coords, setCoords] = useState(null);
   const [meta, setMeta] = useState(null);
   const [radiusKm, setRadiusKm] = useState(null);
+  const abortRef = useRef(null);
 
-  const load = useCallback(async (signal) => {
+  const load = useCallback(async (signal, tokenOverride) => {
     setLoading(true);
     setError('');
+    const authToken = tokenOverride ?? token;
     try {
       const position = await getCurrentCoords();
       if (signal?.aborted) return;
       setCoords(position);
-      const raw = await fetchNearbyCafeterias({
-        lat: position.lat,
-        lng: position.lng,
-        radiusKm: radiusKm ?? undefined,
-        token: token || undefined,
-        signal,
-      });
+      const raw = await fetchWithRetry(() =>
+        fetchNearbyCafeterias({
+          lat: position.lat,
+          lng: position.lng,
+          radiusKm: radiusKm ?? undefined,
+          token: authToken || undefined,
+          signal,
+        })
+      );
       if (signal?.aborted) return;
       const mapped = mapNearbyResponse(raw);
       setCafes(mapped.items);
@@ -42,16 +47,26 @@ export function CafeteriasProvider({ children }) {
     } catch (e) {
       if (signal?.aborted || e.name === 'AbortError') return;
       setCafes([]);
-      setError(e.message || 'No se pudieron cargar las cafeterías.');
+      setError(friendlyApiMessage(e, 'No pudimos cargar cafeterías cerca tuyo. Probá de nuevo.'));
     } finally {
       if (!signal?.aborted) setLoading(false);
     }
   }, [token, radiusKm]);
 
+  const refetch = useCallback(async (tokenOverride) => {
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
+    await load(ac.signal, tokenOverride);
+  }, [load]);
+
   useEffect(() => {
     const ac = new AbortController();
+    abortRef.current = ac;
     load(ac.signal);
-    return () => ac.abort();
+    return () => {
+      ac.abort();
+    };
   }, [load]);
 
   const getCafeById = useCallback(
@@ -68,10 +83,10 @@ export function CafeteriasProvider({ children }) {
       meta,
       radiusKm,
       setRadiusKm,
-      refetch: load,
+      refetch,
       getCafeById,
     }),
-    [cafes, loading, error, coords, meta, radiusKm, load, getCafeById]
+    [cafes, loading, error, coords, meta, radiusKm, refetch, getCafeById]
   );
 
   return (

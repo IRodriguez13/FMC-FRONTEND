@@ -1,8 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Search, SlidersHorizontal, MapPin, X, ChevronDown, AlertCircle, Loader2 } from 'lucide-react';
+import EmptyState from '../components/EmptyState';
 import CafeteriaCard from '../components/CafeteriaCard';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useCafeterias } from '../context/CafeteriasContext';
+import { useAuth } from '../context/AuthContext';
 import { CABA } from '../lib/caba';
 
 const SORT_OPTIONS = [
@@ -11,11 +13,32 @@ const SORT_OPTIONS = [
 ];
 
 export default function Explore() {
+  const { user } = useAuth();
   const { cafes, loading, error, meta, refetch, radiusKm, setRadiusKm } = useCafeterias();
+  const location = useLocation();
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('distance');
   const [showFilters, setShowFilters] = useState(false);
   const [premiumOnly, setPremiumOnly] = useState(false);
+  const [discountOnly, setDiscountOnly] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const discountCount = useMemo(
+    () => cafes.filter(c => c.discountPercent != null).length,
+    [cafes]
+  );
+
+  useEffect(() => {
+    if (location.state?.search) setSearch(location.state.search);
+  }, [location.state?.search]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refetch();
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const filtered = useMemo(() => {
     let list = [...cafes];
@@ -34,6 +57,10 @@ export default function Explore() {
       list = list.filter(c => c.subscriptionTier === 'Premium');
     }
 
+    if (discountOnly && user?.premium) {
+      list = list.filter(c => c.discountPercent != null);
+    }
+
     list.sort((a, b) => {
       if (sort === 'distance') return a.distance - b.distance;
       if (sort === 'name') return a.name.localeCompare(b.name);
@@ -41,10 +68,10 @@ export default function Explore() {
     });
 
     return list;
-  }, [cafes, search, sort, premiumOnly]);
+  }, [cafes, search, sort, premiumOnly, discountOnly, user?.premium]);
 
   return (
-    <div className="min-h-screen bg-cream-100">
+    <div className="min-h-screen bg-cream-100 dark:bg-coffee-900">
       <div className="bg-coffee-700 py-10 px-4">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center gap-2 text-cream-300 mb-2">
@@ -54,7 +81,13 @@ export default function Explore() {
               {meta ? ` · radio ${meta.appliedRadiusKm} km · plan ${meta.viewerTier}` : ' · buscando cerca tuyo…'}
             </span>
           </div>
-          <h1 className="font-display text-3xl font-bold text-cream-100 mb-6">Buscar cafeterías</h1>
+          <h1 className="font-display text-3xl font-bold text-cream-100 mb-2">Buscar cafeterías</h1>
+          {user?.premium && (
+            <p className="font-body text-cream-200 text-sm mb-4">
+              Plan Premium activo · {discountCount} {discountCount === 1 ? 'local con descuento' : 'locales con descuento'} en tu radio
+            </p>
+          )}
+          {!user?.premium && <div className="mb-4" />}
 
           <div className="flex gap-3">
             <div className="flex-1 relative">
@@ -75,7 +108,7 @@ export default function Explore() {
             <button
               onClick={() => setShowFilters(!showFilters)}
               className={`flex items-center gap-2 px-5 py-3.5 rounded-2xl font-body font-semibold transition-all ${
-                showFilters || premiumOnly
+                showFilters || premiumOnly || discountOnly
                   ? 'bg-cream-200 text-coffee-800'
                   : 'bg-white/20 text-cream-100 hover:bg-white/30'
               }`}
@@ -112,6 +145,17 @@ export default function Explore() {
             >
               Solo Enterprise Premium
             </button>
+            {user?.premium && (
+              <button
+                type="button"
+                onClick={() => setDiscountOnly(!discountOnly)}
+                className={`px-3 py-1.5 rounded-full font-body text-sm transition-all ${
+                  discountOnly ? 'bg-amber-500 text-white' : 'bg-cream-100 text-coffee-600'
+                }`}
+              >
+                Con descuento
+              </button>
+            )}
             <div className="flex items-center gap-2">
               <span className="font-body text-sm font-semibold text-coffee-600">Radio (km):</span>
               {[null, 2, 5, 10, 15].map((r) => (
@@ -153,10 +197,12 @@ export default function Explore() {
           Ver en mapa
         </Link>
         <button
-          onClick={refetch}
-          className="flex-shrink-0 px-4 py-1.5 rounded-full font-body text-sm font-medium border border-sand-300 bg-white text-coffee-600"
+          type="button"
+          onClick={handleRefresh}
+          disabled={loading || refreshing}
+          className="flex-shrink-0 px-4 py-1.5 rounded-full font-body text-sm font-medium border border-sand-300 bg-white text-coffee-600 disabled:opacity-50"
         >
-          Actualizar
+          {refreshing || loading ? 'Actualizando…' : 'Actualizar'}
         </button>
       </div>
 
@@ -169,29 +215,39 @@ export default function Explore() {
         )}
 
         {error && !loading && (
-          <div className="flex flex-col items-center gap-3 py-16 text-center">
-            <AlertCircle className="text-red-500" size={32} />
-            <p className="font-body text-coffee-600">{error}</p>
-            <p className="font-body text-sm text-coffee-400">¿Está el backend en marcha? (make up · puerto 5214)</p>
-            <button onClick={refetch} className="btn-primary">Reintentar</button>
-          </div>
+          <EmptyState
+            icon={AlertCircle}
+            title="No pudimos cargar resultados"
+            description={error}
+            actionLabel="Reintentar"
+            onAction={handleRefresh}
+          />
         )}
 
-        {!loading && !error && (
+        {!loading && !error && cafes.length === 0 && (
+          <EmptyState
+            emoji="📍"
+            title="Sin cafeterías en el radio"
+            description="Ampliá el radio con Premium o ajustá los filtros de búsqueda."
+            actionLabel="Iniciar sesión"
+            actionTo="/login"
+          />
+        )}
+
+        {!loading && !error && cafes.length > 0 && (
           <>
-            <p className="font-body text-coffee-500 text-sm mb-4">
+            <p className="font-body text-coffee-500 dark:text-coffee-300 text-sm mb-4">
               {filtered.length} {filtered.length === 1 ? 'cafetería encontrada' : 'cafeterías encontradas'}
             </p>
 
             {filtered.length === 0 ? (
-              <div className="text-center py-20">
-                <div className="text-6xl mb-4">☕</div>
-                <h3 className="font-display text-2xl font-semibold text-coffee-700 mb-2">Sin resultados</h3>
-                <p className="font-body text-coffee-400 mb-6">Probá con otro término o ampliá el radio desde el backend.</p>
-                <button onClick={() => { setSearch(''); setPremiumOnly(false); }} className="btn-secondary">
-                  Limpiar filtros
-                </button>
-              </div>
+              <EmptyState
+                emoji="☕"
+                title="Sin resultados con estos filtros"
+                description="Probá otro término o desactivá filtros Premium."
+                actionLabel="Limpiar filtros"
+                onAction={() => { setSearch(''); setPremiumOnly(false); }}
+              />
             ) : (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filtered.map((cafe, i) => (

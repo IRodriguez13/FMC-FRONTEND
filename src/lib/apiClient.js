@@ -1,4 +1,4 @@
-const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
+import { getApiBase } from './apiBase';
 
 export class ApiError extends Error {
   constructor(message, status, body) {
@@ -15,7 +15,10 @@ function parseProblemDetail(data) {
 }
 
 export async function apiRequest(path, { method = 'GET', body, token, signal } = {}) {
-  const url = `${API_BASE}${path.startsWith('/') ? path : `/${path}`}`;
+  const base = getApiBase();
+  const url = base
+    ? `${base}${path.startsWith('/') ? path : `/${path}`}`
+    : path.startsWith('/') ? path : `/${path}`;
   const headers = { Accept: 'application/json' };
   if (body !== undefined) headers['Content-Type'] = 'application/json';
   if (token) headers.Authorization = `Bearer ${token}`;
@@ -45,7 +48,49 @@ export async function apiRequest(path, { method = 'GET', body, token, signal } =
       (typeof data === 'string' ? data : null) ||
       `Error ${res.status}`;
     const err = new ApiError(msg, res.status, data);
-    if (res.status === 401 || res.status === 404) err.sessionExpired = true;
+    // Solo rutas autenticadas: 401/404 en login/register son credenciales, no sesión vencida.
+    if (token && (res.status === 401 || res.status === 404)) err.sessionExpired = true;
+    throw err;
+  }
+
+  return data;
+}
+
+export async function apiUpload(path, { file, fieldName = 'file', token, signal } = {}) {
+  const base = getApiBase();
+  const url = base
+    ? `${base}${path.startsWith('/') ? path : `/${path}`}`
+    : path.startsWith('/') ? path : `/${path}`;
+  const formData = new FormData();
+  formData.append(fieldName, file);
+
+  const headers = { Accept: 'application/json' };
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers,
+    body: formData,
+    signal,
+  });
+
+  const text = await res.text();
+  let data = null;
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = text;
+    }
+  }
+
+  if (!res.ok) {
+    const msg =
+      parseProblemDetail(data) ||
+      (typeof data === 'string' ? data : null) ||
+      `Error ${res.status}`;
+    const err = new ApiError(msg, res.status, data);
+    if (token && (res.status === 401 || res.status === 404)) err.sessionExpired = true;
     throw err;
   }
 

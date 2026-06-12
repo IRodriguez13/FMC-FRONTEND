@@ -4,10 +4,12 @@ import L from 'leaflet';
 import { Link } from 'react-router-dom';
 import { CABA } from '../lib/caba';
 import { getCoffeeMapIcon } from '../lib/mapCoffeeIcon';
+import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 import 'leaflet/dist/leaflet.css';
 
-/** Carto Voyager — estilo claro, gratis para demos (atribución en mapa). */
-const TILE_URL = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+const TILE_LIGHT = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+const TILE_DARK = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
 const TILE_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
 
@@ -56,6 +58,10 @@ function CafeteriasMapInner({
   onSelect,
   className,
 }) {
+  const { isDark } = useTheme();
+  const { user } = useAuth();
+  const tileUrl = isDark ? TILE_DARK : TILE_LIGHT;
+
   const cafePoints = useMemo(
     () =>
       cafes
@@ -84,7 +90,7 @@ function CafeteriasMapInner({
       scrollWheelZoom
       style={{ height: '100%', width: '100%', minHeight: 320 }}
     >
-      <TileLayer url={TILE_URL} attribution={TILE_ATTRIBUTION} />
+      <TileLayer url={tileUrl} attribution={TILE_ATTRIBUTION} />
       <MapReady />
       <FitBounds points={allPoints} />
       <FlyToSelected cafe={selectedCafe} />
@@ -131,9 +137,9 @@ function CafeteriasMapInner({
                     ? `${cafe.distance} m`
                     : `${(cafe.distance / 1000).toFixed(1)} km`}
                 </p>
-                {cafe.discountPercent != null && (
+                {user?.premium && cafe.discountPercent != null && (
                   <p className="text-amber-700 text-xs font-semibold mt-1">
-                    Descuento {cafe.discountPercent}%
+                    Descuento Premium {cafe.discountPercent}%
                   </p>
                 )}
                 <Link
@@ -161,7 +167,7 @@ export default function CafeteriasMap(props) {
 
   if (!mounted) {
     return (
-      <div className="fmc-map-shell flex items-center justify-center bg-cream-200 font-body text-coffee-600 text-sm">
+      <div className="fmc-map-shell flex items-center justify-center bg-cream-200 dark:bg-coffee-800 font-body text-coffee-600 dark:text-coffee-300 text-sm">
         Inicializando mapa…
       </div>
     );

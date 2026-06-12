@@ -5,7 +5,12 @@ import {
   enterpriseLogin,
   enterpriseRegister,
 } from '../api/authApi';
-import { fetchConsumerProfile, updateConsumerTier } from '../api/consumerApi';
+import {
+  fetchConsumerProfile,
+  updateConsumerProfile,
+  uploadConsumerAvatar,
+  updateConsumerTier,
+} from '../api/consumerApi';
 import {
   fetchEnterpriseCafeteria,
   updateEnterpriseCafeteria,
@@ -28,7 +33,8 @@ function consumerFromProfile(profile) {
   return {
     id: String(profile.id),
     email,
-    name: email.split('@')[0],
+    name: profile.displayName || email.split('@')[0],
+    avatarUrl: profile.avatarUrl || null,
     tier: profile.tier,
     premium: profile.tier === 'Premium',
     role: 'consumer',
@@ -183,6 +189,27 @@ export function AuthProvider({ children }) {
       setSession(res.token, 'consumer');
       setTokenState(res.token);
       setUser(consumerFromProfile(res.profile));
+      return res.token;
+    },
+    [token]
+  );
+
+  const saveConsumerProfile = useCallback(
+    async ({ displayName }) => {
+      if (!token) throw new Error('Iniciá sesión primero.');
+      const profile = await updateConsumerProfile({ displayName }, token);
+      setUser(consumerFromProfile(profile));
+      return profile;
+    },
+    [token]
+  );
+
+  const saveConsumerAvatar = useCallback(
+    async (file) => {
+      if (!token) throw new Error('Iniciá sesión primero.');
+      const profile = await uploadConsumerAvatar(file, token);
+      setUser(consumerFromProfile(profile));
+      return profile;
     },
     [token]
   );
@@ -240,6 +267,8 @@ export function AuthProvider({ children }) {
         isFavorite,
         favorites,
         setConsumerTier,
+        saveConsumerProfile,
+        saveConsumerAvatar,
         saveEnterpriseCafeteria,
         setEnterpriseSubscriptionTier,
         refreshEnterprise,

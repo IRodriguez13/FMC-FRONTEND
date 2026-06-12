@@ -1,36 +1,54 @@
-# Find My Coffee — Documentación frontend
+# FMC Frontend — Documentación
 
-> **Última verificación:** 2026-06-02  
-> **Repo:** `FindMyCoffee-Frontend` · **API hermano:** [`../fmcbackend`](../fmcbackend)
+> **Última verificación:** 2026-06-11  
+> **Fuente de verdad:** `src/`, `vite.config.js`, `package.json`  
+> **Backend acoplado:** [`../fmcbackend`](../fmcbackend) — ver `Documentation/05-frontend-integration.md`
 
-Contexto para desarrollo y agentes. Complementa el README de la raíz; no duplica la doc del API salvo lo necesario para la UI.
+SPA React + Vite para **Find My Coffee** (consumidor y enterprise).
 
-## Índice
+## Arranque
 
-| Archivo | Contenido |
-|---------|-----------|
-| [01-overview.md](./01-overview.md) | Propósito, stack, límites del MVP UI |
-| [02-structure-and-routing.md](./02-structure-and-routing.md) | Carpetas, rutas, layouts |
-| [03-state-and-api.md](./03-state-and-api.md) | Contextos, localStorage, capa API |
-| [04-pages-and-features.md](./04-pages-and-features.md) | Pantallas y comportamiento |
-| [05-map-and-geo.md](./05-map-and-geo.md) | Leaflet, marcadores, geolocalización |
-| [06-dev-and-troubleshooting.md](./06-dev-and-troubleshooting.md) | Env, proxy, problemas frecuentes |
-| [changelog.md](./changelog.md) | Hitos documentados |
+```bash
+cd fmcfront
+npm install --legacy-peer-deps
+npm run dev          # http://localhost:5173
+```
 
-## Backend (fuente de contrato)
+**Importante:** en `.env` definí `VITE_DEV_API_TARGET` con el **mismo puerto** que muestra `make run` (ej. `http://127.0.0.1:5215`). El front usa esa URL para `/api` y `/media` en dev (evita proxy desalineado).
 
-| Tema | Doc backend |
-|------|-------------|
-| Endpoints REST | [`fmcbackend/Documentation/03-api-rest.md`](../../fmcbackend/Documentation/03-api-rest.md) |
-| Reglas de negocio | [`fmcbackend/Documentation/04-business-rules.md`](../../fmcbackend/Documentation/04-business-rules.md) |
-| Docker, seed, Make | [`fmcbackend/Documentation/06-dev-ops.md`](../../fmcbackend/Documentation/06-dev-ops.md) |
+## Tests
 
-## Política de vigencia
+```bash
+npm test             # Vitest, una pasada
+npm run test:watch   # modo watch
+```
 
-1. **Fuente de verdad:** código en `src/` y contrato del API en `fmcbackend`.
-2. Si doc y código difieren → **priorizar código**; actualizar doc solo con OK del mantenedor.
-3. Revisar «Última verificación» y `git log` en rutas citadas antes de confiar en contexto antiguo.
+Detalle: [testing.md](./testing.md).
 
-## Actualización
+## Rutas principales
 
-Creación o cambios en `Documentation/` requieren **aprobación explícita** del mantenedor por feat (regla global `~/.cursor/rules/ir0-project-documentation.mdc`).
+| Ruta | Pantalla |
+|------|----------|
+| `/` | Home (cercanas) |
+| `/explore` | Búsqueda + filtros (Premium / con descuento) |
+| `/map` | Mapa Leaflet |
+| `/cafe/:id` | Detalle (fotos, reseñas, descuento Premium) |
+| `/profile` | Perfil consumidor (nombre, avatar; email solo lectura) |
+| `/favorites` | Favoritos (`localStorage`) |
+| `/checkout/consumer-premium` | Activar plan Premium |
+| `/demo` | Onboarding demo |
+| `/terms` | Términos |
+
+## Módulos clave
+
+| Archivo | Rol |
+|---------|-----|
+| `src/lib/mediaUrl.js` | URLs `/media`, normalización seed `.png`→`.jpg` |
+| `src/lib/cafeteriaMapper.js` | DTO `/nearby` → modelo UI |
+| `src/context/AuthContext.jsx` | JWT, perfil, favoritos, tier |
+| `src/context/CafeteriasContext.jsx` | `/nearby`, refetch con token nuevo tras Premium |
+| `src/context/ThemeContext.jsx` | Modo claro/oscuro |
+
+## Cuentas seed
+
+Contraseña: `SeedPass-123` — ver tabla en `fmcbackend/Documentation/06-dev-ops.md`.

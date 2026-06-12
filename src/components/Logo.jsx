@@ -4,7 +4,7 @@ export default function Logo({ size = 48, className = '', positionStyles }) {
 
   return (
     <img
-      src="/public/img/logo.png" 
+      src="/img/logo.png"
       alt="Find My Coffee"
       className={className}
       style={{ 

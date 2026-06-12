@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Store, Save, Star, MapPin, AlertCircle, CheckCircle2, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { ApiError } from '../lib/apiClient';
+import { friendlyApiMessage } from '../lib/userFacingError';
 import { CABA, isWithinCaba } from '../lib/caba';
 
 export default function EnterpriseDashboard() {
@@ -76,7 +76,7 @@ export default function EnterpriseDashboard() {
       });
       setMessage('Cafetería actualizada (PUT /api/enterprise/cafeteria/me).');
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Error al guardar.');
+      setError(friendlyApiMessage(err, 'No pudimos guardar los cambios. Probá de nuevo.'));
     } finally {
       setSaving(false);
     }
@@ -90,7 +90,7 @@ export default function EnterpriseDashboard() {
       await setEnterpriseSubscriptionTier(subscriptionTier);
       setMessage(`Plan Enterprise ${subscriptionTier} activo (JWT renovado).`);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'No se pudo cambiar el plan.');
+      setError(friendlyApiMessage(err, 'No pudimos cambiar el plan. Probá de nuevo.'));
     } finally {
       setTierLoading(false);
     }
@@ -128,7 +128,7 @@ export default function EnterpriseDashboard() {
             <button
               type="button"
               disabled={tierLoading || cafe.subscriptionTier === 'Premium'}
-              onClick={() => handleTier('Premium')}
+              onClick={() => navigate('/checkout/enterprise-premium')}
               className="btn-primary text-sm py-2 flex items-center gap-1"
             >
               <Star size={14} /> Premium

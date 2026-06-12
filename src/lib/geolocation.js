@@ -5,19 +5,24 @@ export const DEFAULT_COORDS = { ...CABA.center };
 
 export function getCurrentCoords() {
   return new Promise((resolve) => {
+    const finish = (lat, lng) => resolve({ lat, lng });
+
     if (!navigator.geolocation) {
-      resolve(DEFAULT_COORDS);
+      finish(DEFAULT_COORDS.lat, DEFAULT_COORDS.lng);
       return;
     }
+
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        const coords = {
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-        };
-        resolve(isWithinCaba(coords.lat, coords.lng) ? coords : DEFAULT_COORDS);
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        if (isWithinCaba(lat, lng)) {
+          finish(lat, lng);
+        } else {
+          finish(DEFAULT_COORDS.lat, DEFAULT_COORDS.lng);
+        }
       },
-      () => resolve(DEFAULT_COORDS),
+      () => finish(DEFAULT_COORDS.lat, DEFAULT_COORDS.lng),
       { enableHighAccuracy: false, timeout: 8000, maximumAge: 60_000 }
     );
   });
