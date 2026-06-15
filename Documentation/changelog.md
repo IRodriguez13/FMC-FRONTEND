@@ -1,10 +1,39 @@
 # Changelog — FMC Frontend
 
 > **Fuente de verdad del código:** Git (`fmcfront`).  
-> **Última verificación:** 2026-06-11  
+> **Última verificación:** 2026-06-09  
 > **Backend acoplado:** [`../fmcbackend/Documentation/changelog.md`](../fmcbackend/Documentation/changelog.md)
 
 Entradas **más recientes arriba**.
+
+---
+
+## 2026-06-09 — Favoritos server, enterprise dashboard, doc sync
+
+**Pedido:** Roadmap (favoritos, métricas, cupones, badges, navegación) + coherencia docs/código.  
+**Alcance:** frontend, documentación
+
+### Cambios
+
+- **Favoritos:** `GET /me/favorites`, sync al login, `/favorites` desde API; cache `fmc_favorites`.
+- **Enterprise:** métricas, CRUD cupones, avatar (`ProfileAvatarEditor`), dark mode panel.
+- **UX:** badges Enterprise Premium y «Tu local» (`OwnCafeteriaBadge`), `BackNavLink`, filtros Explore `dark:`, copy «Guardados por usuarios».
+- **Transiciones:** slide entre rutas (`RouteTransition`); tema claro/oscuro con View Transitions API; mapa monta Leaflet al terminar el slide.
+- **Mapa:** fix imports en `CafeteriasMap`; `/map` visible con slide sin tiles rotos.
+- **Errores:** `sessionExpired` acotado; métricas/cupones con avisos locales en dashboard.
+- **Tests:** 31/31 Vitest OK.
+
+### Rutas / estado actualizado
+
+| Ruta | Estado |
+|------|--------|
+| `/favorites` | API + merge localStorage al login |
+| `/enterprise` | Stats, cupones, avatar |
+| `/checkout/*` | Beneficios alineados a reglas de negocio |
+
+### Documentación
+
+- `01-overview.md` … `05-map-and-geo.md`, `README.md` sincronizados con backend.
 
 ---
 

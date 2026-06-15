@@ -8,3 +8,7 @@ export function fetchNearbyCafeterias({ lat, lng, radiusKm, token, signal }) {
   if (radiusKm != null) params.set('radiusKm', String(radiusKm));
   return apiRequest(`/api/cafeterias/nearby?${params}`, { token, signal });
 }
+
+export function fetchCafeteriaCoupons(cafeteriaId, token, signal) {
+  return apiRequest(`/api/cafeterias/${cafeteriaId}/coupons`, { token, signal });
+}

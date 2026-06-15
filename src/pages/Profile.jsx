@@ -1,11 +1,14 @@
-import { useEffect, useRef, useState } from 'react';
-import { User, MapPin, Heart, History, Bell, LogOut, Star, Coffee, ChevronRight, Camera, ArrowLeft, Trash2, Pencil } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { User, MapPin, Heart, History, Bell, LogOut, Star, Coffee, ChevronRight } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import BackNavLink from '../components/BackNavLink';
+import ProfileAvatarEditor from '../components/ProfileAvatarEditor';
 import { useAuth } from '../context/AuthContext';
 import { useCafeterias } from '../context/CafeteriasContext';
+import { fetchConsumerFavorites } from '../api/consumerApi';
 import CafeCoverImage from '../components/CafeCoverImage';
+import { mapFavoriteItem } from '../lib/favoriteMapper';
 import { friendlyApiMessage } from '../lib/userFacingError';
-import { resolveMediaUrl } from '../lib/mediaUrl';
 
 function ProfilePanel({ children, className = '', allowOverflow = false }) {
   return (
@@ -38,104 +41,9 @@ const linkRowClass =
 const iconBoxClass =
   'w-8 h-8 bg-cream-100 dark:bg-coffee-700 rounded-xl flex items-center justify-center shrink-0';
 
-const avatarMenuItemClass =
-  'w-full flex items-center gap-2.5 px-3 py-2.5 text-left font-body text-sm text-coffee-800 dark:text-cream-100 hover:bg-cream-100 dark:hover:bg-coffee-700 transition-colors';
-
-function ProfileAvatarEditor({ name, avatarUrl, disabled, onFileSelect, onRemove }) {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const rootRef = useRef(null);
-  const fileInputRef = useRef(null);
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    const handlePointerDown = (event) => {
-      if (rootRef.current && !rootRef.current.contains(event.target)) {
-        setMenuOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handlePointerDown);
-    return () => document.removeEventListener('mousedown', handlePointerDown);
-  }, [menuOpen]);
-
-  return (
-    <div ref={rootRef} className="relative shrink-0 pr-1 pb-1">
-      {avatarUrl ? (
-        <img
-          src={resolveMediaUrl(avatarUrl)}
-          alt={name}
-          className="w-16 h-16 rounded-2xl object-cover border border-sand-200 dark:border-coffee-600"
-        />
-      ) : (
-        <div className="w-16 h-16 bg-coffee-600 dark:bg-coffee-700 rounded-2xl flex items-center justify-center">
-          <User size={28} className="text-cream-100" />
-        </div>
-      )}
-
-      <button
-        type="button"
-        onMouseDown={e => e.stopPropagation()}
-        onClick={e => {
-          e.stopPropagation();
-          setMenuOpen(open => !open);
-        }}
-        disabled={disabled}
-        className="absolute -bottom-0.5 -right-0.5 w-7 h-7 bg-cream-200 dark:bg-coffee-600 border border-sand-300 dark:border-coffee-500 rounded-full flex items-center justify-center hover:bg-cream-100 dark:hover:bg-coffee-500 transition-colors disabled:opacity-50 shadow-sm z-10"
-        aria-label="Editar foto de perfil"
-        aria-expanded={menuOpen}
-        aria-haspopup="menu"
-      >
-        <Pencil size={12} className="text-coffee-600 dark:text-coffee-200" />
-      </button>
-
-      {menuOpen && (
-        <div
-          role="menu"
-          className="absolute left-full top-0 ml-2 z-50 min-w-[11.5rem] rounded-xl border border-sand-200 dark:border-coffee-600 bg-white dark:bg-coffee-800 shadow-coffee-lg py-1 animate-slide-down"
-        >
-          <button
-            type="button"
-            role="menuitem"
-            className={avatarMenuItemClass}
-            onClick={() => {
-              setMenuOpen(false);
-              fileInputRef.current?.click();
-            }}
-          >
-            <Camera size={15} className="text-coffee-400 dark:text-coffee-300 shrink-0" />
-            {avatarUrl ? 'Cambiar foto' : 'Subir foto'}
-          </button>
-          {avatarUrl && (
-            <button
-              type="button"
-              role="menuitem"
-              className={`${avatarMenuItemClass} text-red-600 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/30`}
-              onClick={() => {
-                setMenuOpen(false);
-                onRemove();
-              }}
-            >
-              <Trash2 size={15} className="shrink-0" />
-              Quitar foto
-            </button>
-          )}
-        </div>
-      )}
-
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/jpeg,image/png,image/webp"
-        className="hidden"
-        disabled={disabled}
-        onChange={onFileSelect}
-      />
-    </div>
-  );
-}
-
 export default function Profile() {
-  const { user, logout, favorites, setConsumerTier, saveConsumerProfile, saveConsumerAvatar, removeConsumerAvatar, authLoading, isEnterprise } = useAuth();
-  const { cafes, refetch } = useCafeterias();
+  const { user, token, logout, favorites, setConsumerTier, saveConsumerProfile, saveConsumerAvatar, removeConsumerAvatar, authLoading, isEnterprise } = useAuth();
+  const { refetch } = useCafeterias();
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('main');
   const [tierLoading, setTierLoading] = useState(false);
@@ -145,7 +53,29 @@ export default function Profile() {
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [profileError, setProfileError] = useState('');
   const [profileMessage, setProfileMessage] = useState('');
-  const favoriteCafes = cafes.filter(c => favorites.includes(c.id));
+  const [favoriteCafes, setFavoriteCafes] = useState([]);
+  const [favoritesLoading, setFavoritesLoading] = useState(false);
+
+  useEffect(() => {
+    if (!token || user?.role !== 'consumer') {
+      setFavoriteCafes([]);
+      return;
+    }
+    let cancelled = false;
+    setFavoritesLoading(true);
+    fetchConsumerFavorites(token)
+      .then((res) => {
+        if (cancelled) return;
+        setFavoriteCafes((res.items ?? []).map((item) => mapFavoriteItem(item, user?.premium)));
+      })
+      .catch(() => {
+        if (!cancelled) setFavoriteCafes([]);
+      })
+      .finally(() => {
+        if (!cancelled) setFavoritesLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [token, user?.role, user?.premium, favorites.length]);
 
   useEffect(() => {
     if (user) setProfileForm({ displayName: user.name || '' });
@@ -269,13 +199,11 @@ export default function Profile() {
   return (
     <div className="min-h-screen bg-cream-100 dark:bg-coffee-900">
       <div className="max-w-2xl mx-auto px-4 py-8">
-        <Link
-          to="/"
+        <BackNavLink
+          fallback="/explore"
+          label="Volver"
           className="inline-flex items-center gap-2 text-coffee-700 dark:text-cream-200 hover:text-coffee-900 dark:hover:text-cream-50 font-body text-sm mb-6 transition-colors"
-        >
-          <ArrowLeft size={16} />
-          Volver al inicio
-        </Link>
+        />
 
         <ProfilePanel allowOverflow className="p-6 mb-6">
           <div className="flex items-center gap-4">
@@ -390,7 +318,9 @@ export default function Profile() {
                 Ver todos
               </Link>
             </div>
-            {favoriteCafes.length === 0 ? (
+            {favoritesLoading ? (
+              <p className="px-5 py-6 font-body text-sm text-coffee-500 dark:text-coffee-400">Cargando favoritos…</p>
+            ) : favoriteCafes.length === 0 ? (
               <p className="px-5 py-4 font-body text-sm text-coffee-600 dark:text-coffee-200">
                 Sin favoritos.{' '}
                 <Link to="/explore" className="underline text-coffee-800 dark:text-cream-50">Explorar cafeterías</Link>
@@ -409,7 +339,7 @@ export default function Profile() {
                     </p>
                     <p className="font-body text-xs text-coffee-500 dark:text-coffee-300">{cafe.neighborhood}</p>
                   </div>
-                  {cafe.discountPercent != null && (
+                  {user.premium && cafe.discountPercent != null && (
                     <span className="font-body text-xs text-amber-700 dark:text-amber-300 font-semibold shrink-0">
                       -{cafe.discountPercent}%
                     </span>

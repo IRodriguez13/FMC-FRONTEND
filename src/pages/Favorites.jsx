@@ -1,13 +1,39 @@
-import { Heart, ArrowLeft } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { useCafeterias } from '../context/CafeteriasContext';
+import { fetchConsumerFavorites } from '../api/consumerApi';
+import BackNavLink from '../components/BackNavLink';
 import CafeteriaCard from '../components/CafeteriaCard';
+import EmptyState from '../components/EmptyState';
+import { useAuth } from '../context/AuthContext';
+import { mapFavoriteItem } from '../lib/favoriteMapper';
+import { friendlyApiMessage } from '../lib/userFacingError';
 
 export default function Favorites() {
-  const { user, favorites } = useAuth();
-  const { cafes } = useCafeterias();
-  const favCafes = cafes.filter(c => favorites.includes(c.id));
+  const { user, token, favorites } = useAuth();
+  const [favCafes, setFavCafes] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const loadFavorites = useCallback(async () => {
+    if (!token || user?.role !== 'consumer') return;
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetchConsumerFavorites(token);
+      const showDiscounts = user?.premium;
+      setFavCafes((res.items ?? []).map((item) => mapFavoriteItem(item, showDiscounts)));
+    } catch (e) {
+      setError(friendlyApiMessage(e, 'No pudimos cargar tus favoritos.'));
+      setFavCafes([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [token, user?.role, user?.premium]);
+
+  useEffect(() => {
+    loadFavorites();
+  }, [loadFavorites, favorites.length]);
 
   if (!user) {
     return (
@@ -28,13 +54,7 @@ export default function Favorites() {
     <div className="min-h-screen bg-cream-100 dark:bg-coffee-900">
       <div className="bg-coffee-700 dark:bg-coffee-800 py-10 px-4">
         <div className="max-w-6xl mx-auto">
-          <Link
-            to="/"
-            className="inline-flex items-center gap-2 text-cream-200 hover:text-cream-50 font-body text-sm mb-4 transition-colors"
-          >
-            <ArrowLeft size={16} />
-            Volver al inicio
-          </Link>
+          <BackNavLink fallback="/explore" label="Volver" />
           <h1 className="font-display text-3xl font-bold text-cream-50 flex items-center gap-3">
             <Heart size={28} className="fill-cream-200 text-cream-200" />
             Mis Favoritos
@@ -46,7 +66,18 @@ export default function Favorites() {
       </div>
 
       <div className="max-w-6xl mx-auto px-4 py-10">
-        {favCafes.length === 0 ? (
+        {loading && (
+          <p className="font-body text-center text-coffee-500 py-12">Cargando favoritos…</p>
+        )}
+        {error && !loading && (
+          <EmptyState
+            title="No pudimos cargar favoritos"
+            description={error}
+            actionLabel="Reintentar"
+            onAction={loadFavorites}
+          />
+        )}
+        {!loading && !error && favCafes.length === 0 && (
           <div className="text-center py-20">
             <Heart size={56} className="mx-auto text-coffee-300 dark:text-coffee-600 mb-4" />
             <h3 className="font-display text-2xl font-semibold text-coffee-800 dark:text-cream-100 mb-2">
@@ -57,7 +88,8 @@ export default function Favorites() {
             </p>
             <Link to="/explore" className="btn-primary">Explorar cafeterías</Link>
           </div>
-        ) : (
+        )}
+        {!loading && !error && favCafes.length > 0 && (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {favCafes.map((cafe, i) => (
               <div key={cafe.id} className="animate-slide-up" style={{ animationDelay: `${i * 80}ms` }}>

@@ -12,12 +12,16 @@ import {
   uploadCafeteriaPhoto,
   uploadReviewPhoto,
 } from '../api/cafeteriaMediaApi';
+import { fetchCafeteriaCoupons } from '../api/discoveryApi';
 import CafeCoverImage from '../components/CafeCoverImage';
 import ConfirmDialog from '../components/ConfirmDialog';
 import StarRating from '../components/StarRating';
 import { useAuth } from '../context/AuthContext';
+import OwnCafeteriaBadge from '../components/OwnCafeteriaBadge';
+import { isOwnEnterpriseCafeteria } from '../lib/ownCafeteria';
 import { useCafeterias } from '../context/CafeteriasContext';
 import { friendlyApiMessage } from '../lib/userFacingError';
+import { couponBenefitLabel, couponSourceLabel, formatCouponWeekEnd } from '../lib/couponUtils';
 import { resolveMediaUrl } from '../lib/mediaUrl';
 
 function authorLabel(role) {
@@ -209,19 +213,22 @@ export default function CafeDetail() {
   const [reviewFormErrors, setReviewFormErrors] = useState({});
   const [editFormErrors, setEditFormErrors] = useState({});
   const [actionMessage, setActionMessage] = useState('');
+  const [couponsData, setCouponsData] = useState(null);
 
   const loadMedia = useCallback(async (signal) => {
     setMediaLoading(true);
     setMediaError('');
     try {
-      const [photosRes, reviewsRes] = await Promise.all([
+      const [photosRes, reviewsRes, couponsRes] = await Promise.all([
         fetchCafeteriaPhotos(id, signal),
         fetchCafeteriaReviews(id, signal),
+        fetchCafeteriaCoupons(id, token, signal).catch(() => null),
       ]);
       setPhotos(photosRes.items ?? []);
       setReviews(reviewsRes.items ?? []);
       setAverageRating(reviewsRes.averageRating ?? null);
       setTotalReviews(reviewsRes.totalCount ?? 0);
+      setCouponsData(couponsRes);
     } catch (err) {
       if (err.name !== 'AbortError') {
         setMediaError(friendlyApiMessage(err, 'No pudimos cargar fotos ni reseñas de este local.'));
@@ -229,7 +236,7 @@ export default function CafeDetail() {
     } finally {
       setMediaLoading(false);
     }
-  }, [id]);
+  }, [id, token]);
 
   useEffect(() => {
     if (!id) return undefined;
@@ -266,6 +273,11 @@ export default function CafeDetail() {
   const isConsumerPremium = user?.premium && user?.role === 'consumer';
   const isConsumerFree = user?.role === 'consumer' && !user.premium;
   const checkoutReturn = `/cafe/${id}`;
+  const isEnterprisePremiumCafe = cafe.subscriptionTier === 'Premium';
+  const availableCoupons = [
+    ...(couponsData?.platformCoupon ? [couponsData.platformCoupon] : []),
+    ...(couponsData?.businessCoupons ?? []),
+  ];
 
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
@@ -386,15 +398,16 @@ export default function CafeDetail() {
     }
   };
 
-  const handleDownloadCoupon = async () => {
-    if (!user?.premium || cafe.discountPercent == null) return;
+  const handleDownloadCoupon = async (coupon) => {
+    if (!user?.premium || !coupon) return;
     setDownloadingCoupon(true);
     setActionMessage('');
     try {
       const { downloadDiscountCoupon } = await import('../lib/discountCouponPdf');
       await downloadDiscountCoupon(
-        { name: cafe.name, address: cafe.address, discountPercent: cafe.discountPercent },
-        { name: user.name, email: user.email }
+        { name: cafe.name, address: cafe.address },
+        { name: user.name, email: user.email },
+        coupon
       );
       setActionMessage('Cupón descargado.');
     } catch (err) {
@@ -539,9 +552,12 @@ export default function CafeDetail() {
             className="w-24 h-24 -mt-10 rounded-2xl border-4 border-white dark:border-coffee-700 shadow-lg object-cover shrink-0"
           />
           <div className="pt-8 min-w-0 flex-1">
-            <h1 className="font-display text-2xl md:text-3xl font-bold leading-snug text-coffee-900 dark:text-cream-50 line-clamp-2">
-              {cafe.name}
-            </h1>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="font-display text-2xl md:text-3xl font-bold leading-snug text-coffee-900 dark:text-cream-50 line-clamp-2">
+                {cafe.name}
+              </h1>
+              {isOwnEnterpriseCafeteria(user, cafe.id) && <OwnCafeteriaBadge className="mb-0.5" />}
+            </div>
             <p className="font-body text-coffee-600 dark:text-coffee-200 flex items-center gap-1.5 mt-1 text-sm">
               <MapPin size={14} className="shrink-0" />
               <span className="truncate">{cafe.address}</span>
@@ -570,7 +586,12 @@ export default function CafeDetail() {
           <span className="bg-white dark:bg-coffee-800 text-coffee-700 dark:text-cream-200 text-sm px-3 py-1 rounded-full font-body border border-sand-200 dark:border-coffee-600">
             {cafe.distance < 1000 ? `${cafe.distance} m` : `${(cafe.distance / 1000).toFixed(1)} km`}
           </span>
-          <span className="bg-white dark:bg-coffee-800 text-coffee-700 dark:text-cream-200 text-sm px-3 py-1 rounded-full font-body border border-sand-200 dark:border-coffee-600">
+          <span className={`text-sm px-3 py-1 rounded-full font-body border ${
+            isEnterprisePremiumCafe
+              ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-900 dark:text-amber-100 border-amber-300 dark:border-amber-600 font-semibold flex items-center gap-1'
+              : 'bg-white dark:bg-coffee-800 text-coffee-700 dark:text-cream-200 border-sand-200 dark:border-coffee-600'
+          }`}>
+            {isEnterprisePremiumCafe && <Star size={12} className="fill-amber-500 text-amber-500" />}
             Enterprise {cafe.subscriptionTier}
           </span>
           {cafe.discountPercent != null && user?.premium && (
@@ -580,29 +601,42 @@ export default function CafeDetail() {
           )}
         </div>
 
-        {isConsumerPremium && cafe.discountPercent != null && (
-          <div className="mt-4 rounded-2xl border-2 border-amber-400/50 dark:border-amber-600/60 bg-amber-50 dark:bg-amber-950/40 px-4 py-4 flex flex-col sm:flex-row sm:items-center gap-4">
-            <div className="flex items-start gap-3 flex-1 min-w-0">
-              <Tag size={20} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-              <div>
-                <p className="font-display font-semibold text-amber-900 dark:text-amber-100">
-                  Descuento exclusivo Premium: {cafe.discountPercent}%
-                </p>
-                <p className="font-body text-sm text-amber-800/90 dark:text-amber-200/90 mt-1">
-                  Presentate en el local o descargá el cupón en PDF.
-                </p>
+        {isConsumerPremium && availableCoupons.length > 0 && (
+          <div className="mt-4 space-y-3">
+            {availableCoupons.map((coupon) => (
+              <div
+                key={coupon.id ?? coupon.code}
+                className="rounded-2xl border-2 border-amber-400/50 dark:border-amber-600/60 bg-amber-50 dark:bg-amber-950/40 px-4 py-4 flex flex-col sm:flex-row sm:items-center gap-4"
+              >
+                <div className="flex items-start gap-3 flex-1 min-w-0">
+                  <Tag size={20} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-display font-semibold text-amber-900 dark:text-amber-100">
+                      {coupon.title} · {couponBenefitLabel(coupon)}
+                    </p>
+                    <p className="font-body text-sm text-amber-800/90 dark:text-amber-200/90 mt-1">
+                      {couponSourceLabel(coupon.source)} · Código {coupon.code} · válido hasta {formatCouponWeekEnd(coupon.validUntil)}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleDownloadCoupon(coupon)}
+                  disabled={downloadingCoupon}
+                  className="btn-secondary shrink-0 inline-flex items-center justify-center gap-2 text-sm py-2.5 px-4 border-amber-300 dark:border-amber-600 text-amber-900 dark:text-amber-100 hover:bg-amber-100/80 dark:hover:bg-amber-900/40 disabled:opacity-60"
+                >
+                  <Download size={16} />
+                  {downloadingCoupon ? 'Generando…' : 'Descargar PDF'}
+                </button>
               </div>
-            </div>
-            <button
-              type="button"
-              onClick={handleDownloadCoupon}
-              disabled={downloadingCoupon}
-              className="btn-secondary shrink-0 inline-flex items-center justify-center gap-2 text-sm py-2.5 px-4 border-amber-300 dark:border-amber-600 text-amber-900 dark:text-amber-100 hover:bg-amber-100/80 dark:hover:bg-amber-900/40 disabled:opacity-60"
-            >
-              <Download size={16} />
-              {downloadingCoupon ? 'Generando…' : 'Descargar cupón'}
-            </button>
+            ))}
           </div>
+        )}
+
+        {isConsumerPremium && availableCoupons.length === 0 && (
+          <p className="mt-4 font-body text-sm text-coffee-600 dark:text-coffee-200 bg-white dark:bg-coffee-800 border border-sand-200 dark:border-coffee-600 rounded-xl px-4 py-3">
+            Este local no tiene cupones activos esta semana. El beneficio FMC aparece cuando el local tiene descuento configurado.
+          </p>
         )}
 
         {isConsumerFree && (
@@ -629,12 +663,6 @@ export default function CafeDetail() {
               Pasar a Premium
             </Link>
           </div>
-        )}
-
-        {isConsumerPremium && cafe.discountPercent == null && (
-          <p className="mt-4 font-body text-sm text-coffee-600 dark:text-coffee-200 bg-white dark:bg-coffee-800 border border-sand-200 dark:border-coffee-600 rounded-xl px-4 py-3">
-            Este local no tiene descuento activo por ahora. Probá el filtro «Con descuento» en Explorar.
-          </p>
         )}
 
         {user && !user.premium && user.role === 'enterprise' && (

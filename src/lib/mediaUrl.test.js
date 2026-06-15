@@ -4,7 +4,7 @@ import { FALLBACK_COVER, resolveMediaUrl } from './mediaUrl';
 describe('resolveMediaUrl', () => {
   beforeEach(() => {
     vi.stubEnv('VITE_API_URL', '');
-    vi.stubEnv('VITE_DEV_API_TARGET', 'http://127.0.0.1:5215');
+    vi.stubEnv('VITE_DEV_API_TARGET', 'http://127.0.0.1:5214');
     vi.stubEnv('DEV', 'true');
     vi.stubEnv('PROD', 'false');
   });
@@ -23,18 +23,18 @@ describe('resolveMediaUrl', () => {
     expect(resolveMediaUrl(url)).toBe(url);
   });
 
-  it('en dev apunta al VITE_DEV_API_TARGET para /media', () => {
-    expect(resolveMediaUrl('/media/abc.jpg')).toBe('http://127.0.0.1:5215/media/abc.jpg');
+  it('en dev usa rutas relativas (proxy Vite)', () => {
+    expect(resolveMediaUrl('/media/abc.jpg')).toBe('/media/abc.jpg');
   });
 
   it('normaliza seed legacy .png a .jpg', () => {
     expect(resolveMediaUrl('/media/seed-palermo-barra.png')).toBe(
-      'http://127.0.0.1:5215/media/seed-palermo-barra.jpg'
+      '/media/seed-palermo-barra.jpg'
     );
   });
 
   it('añade slash inicial a rutas relativas sin slash', () => {
-    expect(resolveMediaUrl('media/foo.jpg')).toBe('http://127.0.0.1:5215/media/foo.jpg');
+    expect(resolveMediaUrl('media/foo.jpg')).toBe('/media/foo.jpg');
   });
 
   it('usa VITE_API_URL en prod', () => {

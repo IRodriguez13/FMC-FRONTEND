@@ -1,6 +1,6 @@
 # 01 — Visión general (frontend)
 
-> **Última verificación:** 2026-06-02  
+> **Última verificación:** 2026-06-09  
 > **Fuente de verdad:** `package.json`, `src/App.jsx`, `README.md`
 
 ## Propósito
@@ -29,20 +29,26 @@ Cliente web para **Find My Coffee**: explorar cafeterías registradas en **CABA*
 
 - **Una carga de cafeterías** vía `CafeteriasProvider` → `/nearby` con coords del usuario (o fallback Obelisco).
 - **JWT** en `localStorage`; rehidratación al F5 con `GET /me` o `GET /enterprise/cafeteria/me`.
-- **Enterprise logueado:** el backend excluye su propia cafetería del listado (solo competencia).
-- **Favoritos:** persistencia local; no hay endpoint.
+- **Enterprise logueado:** ve **todos** los locales en `/nearby`, **incluido el propio** si está activo.
+- **Favoritos:** servidor + cache local (`fmc_favorites`); merge al login vía `PUT /me/favorites/sync`.
 
 ## Fuera de alcance (estado actual)
 
-- Reseñas, menú y ratings reales (detalle muestra placeholders).
 - Verificación de email real (si hay UI de código, es mock).
-- Sincronización de favoritos con servidor.
+- Pasarela de pago real (checkout simula tier).
 - PWA / SSR.
+
+## Incluido en el MVP
+
+- Reseñas y fotos por cafetería (CRUD author-owned).
+- Cupones semanales (consumidor Premium + enterprise Premium).
+- Métricas enterprise, avatares consumer/enterprise, navegación «volver» inteligente (`BackNavLink`).
 
 ## Variables de entorno
 
 | Variable | Dev | Producción |
 |----------|-----|------------|
 | `VITE_API_URL` | vacío (proxy) | URL absoluta del API |
+| `VITE_DEV_API_TARGET` | URL del `make run` backend | — |
 
 Ver `.env.example`.

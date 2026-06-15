@@ -106,34 +106,34 @@ export default function Navbar() {
               </button>
 
               {userMenuOpen && user && (
-                <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-coffee-lg border border-sand-200 overflow-hidden animate-slide-down z-50">
-                  <div className="px-4 py-3 bg-cream-100 border-b border-sand-200">
-                    <p className="font-display font-semibold text-coffee-800 text-sm">{user.name}</p>
-                    <p className="text-coffee-500 text-xs font-body">{user.email}</p>
+                <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-coffee-800 rounded-2xl shadow-coffee-lg border border-sand-200 dark:border-coffee-600 overflow-hidden animate-slide-down z-50">
+                  <div className="px-4 py-3 bg-cream-100 dark:bg-coffee-700/80 border-b border-sand-200 dark:border-coffee-600">
+                    <p className="font-display font-semibold text-coffee-800 dark:text-cream-50 text-sm">{user.name}</p>
+                    <p className="text-coffee-500 dark:text-coffee-300 text-xs font-body">{user.email}</p>
                   </div>
                   <div className="py-2">
                     {isConsumer && (
                       <>
-                        <Link to="/profile" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-coffee-700 hover:bg-cream-100 font-body text-sm">
+                        <Link to="/profile" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-coffee-700 dark:text-cream-100 hover:bg-cream-100 dark:hover:bg-coffee-700 font-body text-sm">
                           <User size={15} className="text-coffee-400" /> Perfil consumidor
                         </Link>
-                        <Link to="/favorites" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-coffee-700 hover:bg-cream-100 font-body text-sm">
+                        <Link to="/favorites" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-coffee-700 dark:text-cream-100 hover:bg-cream-100 dark:hover:bg-coffee-700 font-body text-sm">
                           <Heart size={15} className="text-coffee-400" /> Favoritos
                         </Link>
                         {!user.premium && (
-                          <Link to="/checkout/consumer-premium" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-amber-600 hover:bg-amber-50 font-body text-sm font-semibold">
+                          <Link to="/checkout/consumer-premium" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-amber-600 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/30 font-body text-sm font-semibold">
                             <Star size={15} className="fill-amber-400" /> Plan Premium
                           </Link>
                         )}
                       </>
                     )}
                     {isEnterprise && (
-                      <Link to="/enterprise" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-coffee-700 hover:bg-cream-100 font-body text-sm">
+                      <Link to="/enterprise" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-coffee-700 dark:text-cream-100 hover:bg-cream-100 dark:hover:bg-coffee-700 font-body text-sm">
                         <Store size={15} className="text-coffee-400" /> Panel negocio
                       </Link>
                     )}
-                    <div className="mx-4 my-1 border-t border-sand-200" />
-                    <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-2.5 text-red-500 hover:bg-red-50 font-body text-sm">
+                    <div className="mx-4 my-1 border-t border-sand-200 dark:border-coffee-600" />
+                    <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-2.5 text-red-500 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/30 font-body text-sm">
                       <LogOut size={15} /> Cerrar sesión
                     </button>
                   </div>

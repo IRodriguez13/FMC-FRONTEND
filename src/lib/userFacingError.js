@@ -67,7 +67,9 @@ function resolveBackendDetail(detail) {
 function messageByStatus(status, fallback) {
   if (status === 401) return 'No pudimos verificar tu acceso. Volvé a iniciar sesión.';
   if (status === 403) return 'No tenés permiso para hacer esto con tu cuenta actual.';
-  if (status === 404) return 'No encontramos lo que buscás. Puede que ya no esté disponible.';
+  if (status === 404) {
+    return 'No encontramos ese recurso. Si acabás de actualizar la app, reiniciá el servidor backend.';
+  }
   if (status === 409) return 'Esa acción no se puede completar ahora. Probá de nuevo.';
   if (status === 429) return 'Hiciste muchos intentos seguidos. Esperá un momento y probá otra vez.';
   if (status === 408 || status === 504) {

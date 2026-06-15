@@ -6,16 +6,16 @@ function neighborhoodFromAddress(address) {
   return parts.length > 1 ? parts[parts.length - 1] : parts[0];
 }
 
-function tagsFromItem(item) {
+function tagsFromItem(item, { showDiscounts = false } = {}) {
   const tags = [];
   if (item.subscriptionTier === 'Premium') tags.push('Enterprise Premium');
   else if (item.subscriptionTier === 'Standard') tags.push('Enterprise Standard');
-  if (item.discountPercent != null) tags.push(`${item.discountPercent}% off`);
+  if (showDiscounts && item.discountPercent != null) tags.push(`${item.discountPercent}% off`);
   return tags.length ? tags : ['Cafetería'];
 }
 
 /** Mapea NearbyCafeteriaItem del backend al modelo que usa la UI. */
-export function mapNearbyItem(item) {
+export function mapNearbyItem(item, options = {}) {
   const description = item.description?.trim() || '';
   const cover = item.coverImageUrl ? resolveMediaUrl(item.coverImageUrl) : FALLBACK_COVER;
   return {
@@ -34,7 +34,7 @@ export function mapNearbyItem(item) {
     profileImage: cover,
     rating: item.averageRating ?? null,
     totalReviews: item.reviewCount ?? null,
-    tags: tagsFromItem(item),
+    tags: tagsFromItem(item, options),
     features: [],
     specialties: [],
     hours: {},
@@ -47,13 +47,13 @@ export function mapNearbyItem(item) {
   };
 }
 
-export function mapNearbyResponse(data) {
+export function mapNearbyResponse(data, options = {}) {
   return {
     queryLatitude: data.queryLatitude,
     queryLongitude: data.queryLongitude,
     appliedRadiusKm: data.appliedRadiusKm,
     viewerTier: data.viewerTier,
     maxResultsCap: data.maxResultsCap,
-    items: (data.items ?? []).map(mapNearbyItem),
+    items: (data.items ?? []).map((item) => mapNearbyItem(item, options)),
   };
 }

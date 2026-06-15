@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import BackNavLink from '../components/BackNavLink';
 
 export default function Terms() {
   return (
@@ -11,7 +12,7 @@ export default function Terms() {
         <div className="rounded-2xl border border-sand-200 dark:border-coffee-600 bg-white dark:bg-coffee-800 p-6 md:p-8 font-body text-coffee-700 dark:text-coffee-100 text-sm leading-relaxed space-y-4 shadow-card">
           <p>
             Find My Coffee conecta consumidores con cafeterías en CABA. Los planes Premium amplían
-            radio de búsqueda, visibilidad de descuentos y ranking en el mapa.
+            radio de búsqueda, visibilidad de descuentos, cupones semanales y ranking en Explorar/Mapa.
           </p>
           <p>
             Las reseñas y fotos publicadas por usuarios deben respetar las normas de convivencia.
@@ -23,9 +24,7 @@ export default function Terms() {
         </div>
 
         <div className="mt-8 flex flex-wrap gap-3 justify-center">
-          <Link to="/" className="btn-primary">
-            Volver al inicio
-          </Link>
+          <BackNavLink fallback="/explore" label="Volver" className="btn-primary inline-flex" />
           <Link to="/profile" className="btn-secondary">
             Mi perfil
           </Link>

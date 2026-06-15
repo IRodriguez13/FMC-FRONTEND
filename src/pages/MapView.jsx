@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import { MapPin, Search, X, Navigation, Loader2, AlertCircle, Star, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import BackNavLink from '../components/BackNavLink';
 import { useCafeterias } from '../context/CafeteriasContext';
 import { useAuth } from '../context/AuthContext';
 import { CABA } from '../lib/caba';
 import CafeteriasMap from '../components/CafeteriasMap';
 import EmptyState from '../components/EmptyState';
 import CafeCoverImage from '../components/CafeCoverImage';
+import OwnCafeteriaBadge from '../components/OwnCafeteriaBadge';
+import { isOwnEnterpriseCafeteria } from '../lib/ownCafeteria';
 
 export default function MapView() {
   const { user } = useAuth();
@@ -32,18 +35,14 @@ export default function MapView() {
     : cafes;
 
   return (
-    <div className="h-[calc(100vh-64px)] flex flex-col bg-cream-100 dark:bg-coffee-900">
+    <div className="flex-1 flex flex-col min-h-0 bg-cream-100 dark:bg-coffee-900">
       <div className="p-4 bg-white dark:bg-coffee-800 border-b border-sand-200 dark:border-coffee-700 shadow-sm z-20 shrink-0">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row sm:items-center gap-3">
-          <Link
-            to="/"
-            className="inline-flex items-center justify-center gap-2 p-2.5 rounded-xl border border-sand-200 dark:border-coffee-600 text-coffee-700 dark:text-cream-100 hover:bg-cream-50 dark:hover:bg-coffee-700 shrink-0 self-start sm:self-center"
-            aria-label="Volver al inicio"
-            title="Volver al inicio"
-          >
-            <ArrowLeft size={18} />
-            <span className="font-body text-sm font-medium sm:hidden">Inicio</span>
-          </Link>
+          <BackNavLink
+            fallback="/explore"
+            label="Volver"
+            className="inline-flex items-center justify-center gap-2 p-2.5 rounded-xl border border-sand-200 dark:border-coffee-600 text-coffee-700 dark:text-cream-100 hover:bg-cream-50 dark:hover:bg-coffee-700 shrink-0 self-start sm:self-center mb-0 font-body text-sm font-medium"
+          />
           <div className="relative flex-1 min-w-0">
             <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-coffee-400" />
             <input
@@ -111,7 +110,9 @@ export default function MapView() {
                   className={`w-full text-left flex gap-3 p-3 rounded-2xl border transition-all ${
                     selected?.id === cafe.id
                       ? 'border-coffee-500 bg-cream-100 dark:bg-coffee-700 shadow-coffee'
-                      : 'border-sand-200 dark:border-coffee-600 hover:border-coffee-300 hover:bg-cream-50 dark:hover:bg-coffee-700/50'
+                      : isOwnEnterpriseCafeteria(user, cafe.id)
+                        ? 'border-coffee-400/70 dark:border-coffee-500 bg-cream-50/80 dark:bg-coffee-700/40 hover:border-coffee-400'
+                        : 'border-sand-200 dark:border-coffee-600 hover:border-coffee-300 hover:bg-cream-50 dark:hover:bg-coffee-700/50'
                   }`}
                 >
                   <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-coffee-600">
@@ -122,7 +123,10 @@ export default function MapView() {
                     />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-body font-semibold text-coffee-800 dark:text-cream-100 text-sm truncate">{cafe.name}</p>
+                    <div className="flex items-center gap-1.5 min-w-0 mb-0.5">
+                      <p className="font-body font-semibold text-coffee-800 dark:text-cream-100 text-sm truncate">{cafe.name}</p>
+                      {isOwnEnterpriseCafeteria(user, cafe.id) && <OwnCafeteriaBadge />}
+                    </div>
                     <p className="font-body text-xs text-coffee-400 dark:text-coffee-300 flex items-center gap-1 flex-wrap">
                       <MapPin size={10} /> {cafe.neighborhood} ·{' '}
                       {cafe.distance < 1000 ? `${cafe.distance}m` : `${(cafe.distance / 1000).toFixed(1)}km`}
@@ -163,7 +167,10 @@ export default function MapView() {
           {selected && !loading && (
             <div className="absolute bottom-4 left-4 right-4 md:left-auto md:right-4 md:max-w-sm bg-white dark:bg-coffee-800 rounded-2xl shadow-xl p-4 border border-sand-200 dark:border-coffee-600 z-[1000]">
               <CafeCoverImage src={selected.coverImage} alt="" className="w-full h-28 object-cover rounded-xl mb-3" />
-              <h3 className="font-display text-lg font-bold text-coffee-800 dark:text-cream-100">{selected.name}</h3>
+              <div className="flex items-start gap-2 flex-wrap">
+                <h3 className="font-display text-lg font-bold text-coffee-800 dark:text-cream-100">{selected.name}</h3>
+                {isOwnEnterpriseCafeteria(user, selected.id) && <OwnCafeteriaBadge className="mt-1" />}
+              </div>
               <p className="font-body text-sm text-coffee-500 dark:text-coffee-300 flex items-center gap-1 mt-1">
                 <Navigation size={12} />
                 {selected.address}

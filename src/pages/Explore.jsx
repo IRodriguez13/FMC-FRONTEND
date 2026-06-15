@@ -121,16 +121,18 @@ export default function Explore() {
       </div>
 
       {showFilters && (
-        <div className="bg-white border-b border-sand-200 shadow-sm animate-slide-down">
+        <div className="bg-white dark:bg-coffee-800 border-b border-sand-200 dark:border-coffee-600 shadow-sm animate-slide-down">
           <div className="max-w-6xl mx-auto px-4 py-4 flex flex-wrap gap-4 items-center">
             <div className="flex items-center gap-2">
-              <span className="font-body text-sm font-semibold text-coffee-600">Ordenar:</span>
+              <span className="font-body text-sm font-semibold text-coffee-600 dark:text-coffee-300">Ordenar:</span>
               {SORT_OPTIONS.map(opt => (
                 <button
                   key={opt.value}
                   onClick={() => setSort(opt.value)}
                   className={`px-3 py-1.5 rounded-full font-body text-sm transition-all ${
-                    sort === opt.value ? 'bg-coffee-600 text-white' : 'bg-cream-100 text-coffee-600 hover:bg-cream-200'
+                    sort === opt.value
+                      ? 'bg-coffee-600 text-white'
+                      : 'bg-cream-100 dark:bg-coffee-700 text-coffee-600 dark:text-coffee-200 hover:bg-cream-200 dark:hover:bg-coffee-600'
                   }`}
                 >
                   {opt.label}
@@ -140,7 +142,9 @@ export default function Explore() {
             <button
               onClick={() => setPremiumOnly(!premiumOnly)}
               className={`px-3 py-1.5 rounded-full font-body text-sm transition-all ${
-                premiumOnly ? 'bg-coffee-600 text-white' : 'bg-cream-100 text-coffee-600'
+                premiumOnly
+                  ? 'bg-coffee-600 text-white'
+                  : 'bg-cream-100 dark:bg-coffee-700 text-coffee-600 dark:text-coffee-200 hover:bg-cream-200 dark:hover:bg-coffee-600'
               }`}
             >
               Solo Enterprise Premium
@@ -150,21 +154,25 @@ export default function Explore() {
                 type="button"
                 onClick={() => setDiscountOnly(!discountOnly)}
                 className={`px-3 py-1.5 rounded-full font-body text-sm transition-all ${
-                  discountOnly ? 'bg-amber-500 text-white' : 'bg-cream-100 text-coffee-600'
+                  discountOnly
+                    ? 'bg-amber-500 text-white'
+                    : 'bg-cream-100 dark:bg-coffee-700 text-coffee-600 dark:text-coffee-200 hover:bg-cream-200 dark:hover:bg-coffee-600'
                 }`}
               >
                 Con descuento
               </button>
             )}
             <div className="flex items-center gap-2">
-              <span className="font-body text-sm font-semibold text-coffee-600">Radio (km):</span>
+              <span className="font-body text-sm font-semibold text-coffee-600 dark:text-coffee-300">Radio (km):</span>
               {[null, 2, 5, 10, 15].map((r) => (
                 <button
                   key={String(r)}
                   type="button"
                   onClick={() => setRadiusKm(r)}
                   className={`px-3 py-1.5 rounded-full font-body text-sm ${
-                    radiusKm === r ? 'bg-coffee-600 text-white' : 'bg-cream-100 text-coffee-600'
+                    radiusKm === r
+                      ? 'bg-coffee-600 text-white'
+                      : 'bg-cream-100 dark:bg-coffee-700 text-coffee-600 dark:text-coffee-200 hover:bg-cream-200 dark:hover:bg-coffee-600'
                   }`}
                 >
                   {r == null ? 'Auto' : r}
@@ -183,7 +191,7 @@ export default function Explore() {
             className={`flex-shrink-0 px-4 py-1.5 rounded-full font-body text-sm font-medium border transition-all ${
               sort === opt.value
                 ? 'bg-coffee-600 text-white border-coffee-600'
-                : 'bg-white text-coffee-600 border-sand-300 hover:border-coffee-400'
+                : 'bg-white dark:bg-coffee-800 text-coffee-600 dark:text-coffee-200 border-sand-300 dark:border-coffee-600 hover:border-coffee-400 dark:hover:border-coffee-500'
             }`}
           >
             {opt.label}
@@ -191,7 +199,7 @@ export default function Explore() {
         ))}
         <Link
           to="/map"
-          className="flex-shrink-0 flex items-center gap-1.5 px-4 py-1.5 rounded-full font-body text-sm font-medium border border-sand-300 bg-white text-coffee-600 hover:border-coffee-400 transition-all"
+          className="flex-shrink-0 flex items-center gap-1.5 px-4 py-1.5 rounded-full font-body text-sm font-medium border border-sand-300 dark:border-coffee-600 bg-white dark:bg-coffee-800 text-coffee-600 dark:text-coffee-200 hover:border-coffee-400 dark:hover:border-coffee-500 transition-all"
         >
           <MapPin size={13} />
           Ver en mapa
@@ -200,7 +208,7 @@ export default function Explore() {
           type="button"
           onClick={handleRefresh}
           disabled={loading || refreshing}
-          className="flex-shrink-0 px-4 py-1.5 rounded-full font-body text-sm font-medium border border-sand-300 bg-white text-coffee-600 disabled:opacity-50"
+          className="flex-shrink-0 px-4 py-1.5 rounded-full font-body text-sm font-medium border border-sand-300 dark:border-coffee-600 bg-white dark:bg-coffee-800 text-coffee-600 dark:text-coffee-200 disabled:opacity-50 hover:border-coffee-400 dark:hover:border-coffee-500 transition-all"
         >
           {refreshing || loading ? 'Actualizando…' : 'Actualizar'}
         </button>

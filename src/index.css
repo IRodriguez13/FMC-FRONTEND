@@ -6,11 +6,165 @@
   * {
     box-sizing: border-box;
   }
+  html {
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
   body {
     @apply bg-cream-100 text-coffee-800 font-body dark:bg-coffee-900 dark:text-cream-100;
     -webkit-font-smoothing: antialiased;
   }
 }
+
+/* Transición de tema — View Transitions API (reveal desde el toggle) */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  z-index: 1;
+}
+
+::view-transition-new(root) {
+  z-index: 2;
+  animation: theme-reveal 0.48s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes theme-reveal {
+  from {
+    clip-path: circle(0 at var(--theme-switch-x, 50%) var(--theme-switch-y, 50%));
+  }
+  to {
+    clip-path: circle(var(--theme-switch-r, 120%) at var(--theme-switch-x, 50%) var(--theme-switch-y, 50%));
+  }
+}
+
+/* Fallback sin View Transitions: fundido suave de colores */
+html.theme-transition,
+html.theme-transition * {
+  transition-property: background-color, border-color, color, fill, stroke, box-shadow;
+  transition-duration: 0.35s;
+  transition-timing-function: ease-in-out;
+}
+
+/* Transición entre rutas — slide en capa interna (layout estable para mapa/Leaflet) */
+.route-stage {
+  @apply flex-1 flex flex-col min-h-0 relative overflow-hidden bg-cream-100 dark:bg-coffee-900;
+}
+
+.route-panel {
+  @apply flex flex-col w-full min-h-0 bg-cream-100 dark:bg-coffee-900;
+}
+
+.route-panel--active {
+  @apply flex-1 relative z-[1] min-h-0 flex flex-col;
+}
+
+.route-slide {
+  @apply flex-1 flex flex-col min-h-0 w-full;
+}
+
+.route-panel--leaving {
+  @apply absolute inset-0 z-[1] overflow-hidden pointer-events-none;
+  will-change: transform, opacity;
+}
+
+.route-stage--transitioning .route-panel--active {
+  @apply z-[2];
+}
+
+.route-stage--transitioning .route-slide {
+  @apply relative z-[2] bg-cream-100 dark:bg-coffee-900;
+  will-change: transform;
+}
+
+.route-enter-forward {
+  animation: route-enter-forward 0.4s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+.route-enter-back {
+  animation: route-enter-back 0.4s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+.route-exit-forward {
+  animation: route-exit-forward 0.4s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
+.route-exit-back {
+  animation: route-exit-back 0.4s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
+.route-fade-in {
+  animation: route-fade-in 0.28s ease-out both;
+}
+
+@keyframes route-enter-forward {
+  from {
+    transform: translate3d(30%, 0, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes route-enter-back {
+  from {
+    transform: translate3d(-30%, 0, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes route-exit-forward {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(-24%, 0, 0);
+  }
+}
+
+@keyframes route-exit-back {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(24%, 0, 0);
+  }
+}
+
+@keyframes route-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+  }
+  html.theme-transition,
+  html.theme-transition * {
+    transition-duration: 0.01ms !important;
+  }
+  .route-enter-forward,
+  .route-enter-back,
+  .route-exit-forward,
+  .route-exit-back,
+  .route-fade-in {
+    animation: none !important;
+  }
+}
+
 
 @layer components {
   .btn-primary {
@@ -39,6 +193,9 @@
 }
 ::-webkit-scrollbar-track {
   background: #f5ede0;
+}
+html.dark ::-webkit-scrollbar-track {
+  background: #1e1408;
 }
 ::-webkit-scrollbar-thumb {
   background: #c08b40;

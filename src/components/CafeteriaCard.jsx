@@ -2,14 +2,20 @@ import { Heart, MapPin, Star, Tag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import CafeCoverImage from './CafeCoverImage';
+import OwnCafeteriaBadge from './OwnCafeteriaBadge';
+import { isOwnEnterpriseCafeteria } from '../lib/ownCafeteria';
 
 export default function CafeteriaCard({ cafe }) {
   const { user, toggleFavorite, isFavorite } = useAuth();
   const showDiscount = user?.premium && cafe.discountPercent != null;
+  const isEnterprisePremium = cafe.subscriptionTier === 'Premium';
+  const isOwn = isOwnEnterpriseCafeteria(user, cafe.id);
   const fav = isFavorite(cafe.id);
 
   return (
-    <div className="card group overflow-hidden dark:bg-coffee-800 dark:border-coffee-700 dark:hover:border-coffee-600">
+    <div className={`card group overflow-hidden dark:bg-coffee-800 dark:border-coffee-700 dark:hover:border-coffee-600 ${
+      isOwn ? 'ring-2 ring-coffee-500/50 dark:ring-coffee-400/40' : isEnterprisePremium ? 'ring-1 ring-amber-400/40 dark:ring-amber-500/30' : ''
+    }`}>
       <div className="relative h-48 overflow-hidden">
         <CafeCoverImage
           src={cafe.coverImage}
@@ -33,9 +39,28 @@ export default function CafeteriaCard({ cafe }) {
           <MapPin size={11} />
           {cafe.distance < 1000 ? `${cafe.distance}m` : `${(cafe.distance / 1000).toFixed(1)}km`}
         </div>
-        {showDiscount && (
+        {isOwn && (
+          <div className="absolute top-3 left-3">
+            <OwnCafeteriaBadge />
+          </div>
+        )}
+        {isEnterprisePremium && !isOwn && (
+          <div className="absolute top-3 left-3 bg-amber-500 text-white text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1">
+            <Star size={11} className="fill-white" />
+            Enterprise Premium
+          </div>
+        )}
+        {showDiscount && !isEnterprisePremium && (
           <div
             className="absolute top-3 left-3 bg-amber-500 text-white text-xs font-bold px-2 py-1 rounded-full"
+            title="Descuento exclusivo plan consumidor Premium"
+          >
+            -{cafe.discountPercent}%
+          </div>
+        )}
+        {showDiscount && isEnterprisePremium && !isOwn && (
+          <div
+            className="absolute top-12 left-3 bg-coffee-700/90 text-cream-50 text-xs font-bold px-2 py-1 rounded-full"
             title="Descuento exclusivo plan consumidor Premium"
           >
             -{cafe.discountPercent}%
@@ -45,7 +70,10 @@ export default function CafeteriaCard({ cafe }) {
 
       <div className="p-4">
         <div className="flex items-start justify-between gap-2 mb-1">
-          <h3 className="font-display text-lg font-semibold text-coffee-800 dark:text-cream-100 leading-tight">{cafe.name}</h3>
+          <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+            <h3 className="font-display text-lg font-semibold text-coffee-800 dark:text-cream-100 leading-tight">{cafe.name}</h3>
+            {isOwn && <OwnCafeteriaBadge />}
+          </div>
           {cafe.rating != null && (
             <div className="flex items-center gap-1 shrink-0">
               <Star size={14} className="fill-amber-400 text-amber-400" />

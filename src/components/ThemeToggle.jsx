@@ -7,7 +7,7 @@ export default function ThemeToggle({ className = '' }) {
   return (
     <button
       type="button"
-      onClick={toggleTheme}
+      onClick={(e) => toggleTheme({ x: e.clientX, y: e.clientY })}
       className={`p-2 rounded-xl transition-colors text-cream-200 hover:bg-coffee-600 hover:text-cream-50 ${className}`}
       aria-label={isDark ? 'Modo claro' : 'Modo oscuro'}
       title={isDark ? 'Modo claro' : 'Modo oscuro'}

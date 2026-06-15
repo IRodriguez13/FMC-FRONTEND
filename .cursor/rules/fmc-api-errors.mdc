@@ -17,7 +17,7 @@ alwaysApply: false
 | Credenciales inválidas. | Email o contraseña incorrectos. |
 | Token inválido. | Tu sesión no es válida. Volvé a iniciar sesión. |
 | Rol no autorizado. | Tu cuenta no tiene permiso para esta acción. |
-| Usuario no encontrado. | Tu sesión venció… (solo con token) |
+| Usuario no encontrado. | Tu sesión venció… (con `sessionExpired`) |
 | Cuenta enterprise no encontrada. | No encontramos tu cuenta de negocio… |
 | Cafetería no encontrada. | No encontramos esa cafetería. |
 | Reseña no encontrada. | No encontramos esa reseña. |
@@ -25,5 +25,7 @@ alwaysApply: false
 | El correo ya está registrado. | Ese correo ya tiene una cuenta… |
 | Demo pública: usá las cuentas seed… | En la demo usá las cuentas de /demo |
 | Archivo vacío. / Formatos imagen / nombre / valoración / CABA | ver mapa en `userFacingError.js` |
+
+**`sessionExpired` en `apiClient`:** solo 401, o 404 con los `detail` de auth de la tabla (no cualquier 404).
 
 **Cuentas seed:** `fmcbackend/Infrastructure/Persistence/DataSeeder.cs` → `src/data/demoAccounts.js`.

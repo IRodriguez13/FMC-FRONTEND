@@ -41,11 +41,19 @@ describe('mapNearbyItem', () => {
   });
 
   it('incluye descuento y tags cuando la API lo envía (viewer Premium)', () => {
-    const cafe = mapNearbyItem(baseItem);
+    const cafe = mapNearbyItem(baseItem, { showDiscounts: true });
 
     expect(cafe.discountPercent).toBe(15);
     expect(cafe.tags).toContain('Enterprise Premium');
     expect(cafe.tags).toContain('15% off');
+  });
+
+  it('omite tag de descuento si viewer no es Premium aunque la API envíe %', () => {
+    const cafe = mapNearbyItem(baseItem);
+
+    expect(cafe.discountPercent).toBe(15);
+    expect(cafe.tags).toContain('Enterprise Premium');
+    expect(cafe.tags).not.toContain('15% off');
   });
 
   it('omite descuento cuando la API no lo expone (viewer Free)', () => {

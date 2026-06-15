@@ -1,6 +1,6 @@
 # 02 — Estructura y rutas
 
-> **Última verificación:** 2026-06-02  
+> **Última verificación:** 2026-06-09  
 > **Fuente de verdad:** `src/App.jsx`, árbol `src/`
 
 ## Árbol de carpetas
@@ -8,33 +8,35 @@
 ```
 src/
 ├── api/
-│   authApi.js          # register/login consumer & enterprise
-│   consumerApi.js      # perfil, PATCH tier
+│   authApi.js
+│   consumerApi.js      # perfil, tier, favoritos
 │   discoveryApi.js     # GET nearby
-│   enterpriseApi.js    # cafetería propia, subscription tier
+│   enterpriseApi.js    # cafetería, stats, cupones, avatar
+│   cafeteriaMediaApi.js
 ├── components/
-│   AuthBackLink.jsx
+│   AuthBackLink.jsx    # usa BackNavLink
+│   BackNavLink.jsx     # volver inteligente (historial / returnTo)
 │   CafeteriaCard.jsx
-│   CafeteriasMap.jsx   # Leaflet
-│   Logo.jsx
-│   Navbar.jsx          # nav + «Hola, {nombre}»
-│   StarRating.jsx      # visual; sin API de reviews
+│   CafeteriasMap.jsx
+│   ProfileAvatarEditor.jsx
+│   Navbar.jsx
+│   StarRating.jsx
 ├── context/
 │   AuthContext.jsx
 │   CafeteriasContext.jsx
-├── data/
-│   cafeterias.js       # legacy mock; no usar en flujo principal
+│   ThemeContext.jsx
 ├── lib/
 │   apiClient.js
 │   authStorage.js
-│   caba.js
 │   cafeteriaMapper.js
+│   favoriteMapper.js
+│   mediaUrl.js
+│   userFacingError.js
 │   geolocation.js
 │   mapCoffeeIcon.js
-├── pages/              # una vista por ruta principal
+├── pages/
 ├── App.jsx
-├── main.jsx
-└── index.css           # Tailwind + estilos mapa (.fmc-map-*)
+└── main.jsx
 ```
 
 ## Layouts (`App.jsx`)
@@ -42,16 +44,18 @@ src/
 | Layout | Navbar | Rutas |
 |--------|--------|-------|
 | `Layout` | sí | `/`, `/explore`, `/map`, `/cafe/:id`, `/profile`, `/favorites`, `/enterprise` |
-| `NoNavLayout` | no | `/login`, `/register`, `/register-business` |
+| `NoNavLayout` | no | `/login`, `/register`, `/register-business`, `/checkout/*` |
 
 ## Providers (orden)
 
 ```jsx
-<AuthProvider>
-  <CafeteriasProvider>
-    <BrowserRouter>…</BrowserRouter>
-  </CafeteriasProvider>
-</AuthProvider>
+<ThemeProvider>
+  <AuthProvider>
+    <CafeteriasProvider>
+      <BrowserRouter>…</BrowserRouter>
+    </CafeteriasProvider>
+  </AuthProvider>
+</ThemeProvider>
 ```
 
 `CafeteriasProvider` depende de `useAuth()` para enviar token en `/nearby`.
@@ -64,15 +68,19 @@ src/
 | `/login` | `Login.jsx` | Pestaña consumidor / negocio |
 | `/register` | `Register.jsx` | Solo consumidor |
 | `/register-business` | `RegisterBusiness.jsx` | Alta enterprise + coords CABA |
-| `/explore` | `Explore.jsx` | Filtros client-side sobre `cafes` |
-| `/map` | `MapView.jsx` | Mapa + panel lateral |
-| `/cafe/:id` | `CafeDetail.jsx` | Busca en cache `getCafeById` |
-| `/profile` | `Profile.jsx` | Tier Premium simulado |
-| `/favorites` | `Favorites.jsx` | IDs en localStorage |
-| `/enterprise` | `EnterpriseDashboard.jsx` | PUT cafetería, PATCH plan |
+| `/explore` | `Explore.jsx` | Filtros client-side; chips con `dark:` |
+| `/map` | `MapView.jsx` | Mapa + panel lateral + BackNavLink |
+| `/cafe/:id` | `CafeDetail.jsx` | Cache nearby; reseñas, cupones, PDF |
+| `/profile` | `Profile.jsx` | Tier, avatar, favoritos desde API |
+| `/favorites` | `Favorites.jsx` | `GET /me/favorites` + sync al login |
+| `/enterprise` | `EnterpriseDashboard.jsx` | Métricas, cupones, avatar, PUT cafetería |
+| `/checkout/consumer-premium` | `PaymentCheckout.jsx` | Activar Premium consumidor |
+| `/checkout/enterprise-premium` | `PaymentCheckout.jsx` | Activar Premium enterprise |
+| `/demo`, `/terms` | onboarding / legales | BackNavLink |
 | `*` | `Home.jsx` | fallback |
 
 ## Estilos
 
 - Tailwind: `tailwind.config.js`, tokens `coffee`, `cream`, `sand`.
+- Dark mode: clase `dark` en `<html>` vía `ThemeContext`.
 - Mapa: clases `.fmc-map-shell`, `.fmc-map-leaflet`, `.fmc-map-marker*` en `index.css`.

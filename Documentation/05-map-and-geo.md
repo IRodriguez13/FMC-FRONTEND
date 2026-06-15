@@ -1,6 +1,6 @@
 # 05 — Mapa y geolocalización
 
-> **Última verificación:** 2026-06-02  
+> **Última verificación:** 2026-06-09  
 > **Fuente de verdad:** `src/components/CafeteriasMap.jsx`, `src/lib/mapCoffeeIcon.js`, `src/lib/geolocation.js`
 
 ## Geolocalización (`lib/geolocation.js`)
@@ -24,7 +24,7 @@
 | Cafetería Enterprise Premium | taza **ámbar/dorada** |
 | Seleccionada | escala ~1.12 + sombra |
 
-Iconos: `L.divIcon` con SVG inline (estilo taza con vapor, referencia visual tipo Java).
+Iconos: `L.divIcon` con SVG inline (estilo taza con vapor).
 
 Implementación cacheada: 4 variantes premium × selected en `getCoffeeMapIcon()`.
 
@@ -41,4 +41,8 @@ Implementación cacheada: 4 variantes premium × selected en `getCoffeeMapIcon()
 
 ## Enterprise en el mapa
 
-Con JWT enterprise, `/nearby` **no incluye** la cafetería propia; el mapa muestra solo competidores (3 de 4 seeds si hay 4 locales demo).
+Con JWT enterprise, `/nearby` **incluye** la cafetería propia si está activa en listado. El mapa puede mostrar **4 de 4** seeds demo cuando el enterprise es uno de los locales seed.
+
+## Descuentos en popup/lista
+
+Solo si `user.premium` (consumer): muestra `%` del local en sidebar del mapa.

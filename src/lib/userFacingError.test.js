@@ -14,6 +14,12 @@ describe('friendlyApiMessage', () => {
     expect(friendlyApiMessage(err)).toBe('Tu sesión no es válida. Volvé a iniciar sesión.');
   });
 
+  it('no marca sesión vencida en 404 genérico sin detail de auth', () => {
+    const err = new ApiError('Error 404', 404);
+    expect(err.sessionExpired).toBeUndefined();
+    expect(friendlyApiMessage(err, 'No pudimos cargar las métricas.')).toMatch(/recurso|métricas/i);
+  });
+
   it('mapea sesión expirada cuando no hay detail mapeable', () => {
     const err = new ApiError('Usuario no encontrado.', 404);
     err.sessionExpired = true;

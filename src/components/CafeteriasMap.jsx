@@ -6,6 +6,13 @@ import { CABA } from '../lib/caba';
 import { getCoffeeMapIcon } from '../lib/mapCoffeeIcon';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import OwnCafeteriaBadge from './OwnCafeteriaBadge';
+import { isOwnEnterpriseCafeteria } from '../lib/ownCafeteria';
+import {
+  ROUTE_TRANSITION_END_EVENT,
+  ROUTE_TRANSITION_START_EVENT,
+  isRouteSlideActive,
+} from '../lib/routeTransition';
 import 'leaflet/dist/leaflet.css';
 
 const TILE_LIGHT = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
@@ -16,11 +23,18 @@ const TILE_ATTRIBUTION =
 function MapReady({ onReady }) {
   const map = useMap();
   useEffect(() => {
-    const t = window.setTimeout(() => {
+    const invalidate = () => {
       map.invalidateSize();
-      onReady?.();
-    }, 100);
-    return () => window.clearTimeout(t);
+    };
+    const t = window.setTimeout(invalidate, 100);
+    window.addEventListener(ROUTE_TRANSITION_END_EVENT, invalidate);
+    window.addEventListener('resize', invalidate);
+    onReady?.();
+    return () => {
+      window.clearTimeout(t);
+      window.removeEventListener(ROUTE_TRANSITION_END_EVENT, invalidate);
+      window.removeEventListener('resize', invalidate);
+    };
   }, [map, onReady]);
   return null;
 }
@@ -116,6 +130,7 @@ function CafeteriasMapInner({
         if (cafe.lat == null || cafe.lng == null) return null;
         const selected = selectedId === cafe.id;
         const premium = cafe.subscriptionTier === 'Premium';
+        const isOwn = isOwnEnterpriseCafeteria(user, cafe.id);
         return (
           <Marker
             key={cafe.id}
@@ -127,7 +142,10 @@ function CafeteriasMapInner({
           >
             <Popup>
               <div className="font-body text-sm min-w-[160px]">
-                <p className="font-semibold text-coffee-800">{cafe.name}</p>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <p className="font-semibold text-coffee-800">{cafe.name}</p>
+                  {isOwn && <OwnCafeteriaBadge />}
+                </div>
                 {premium && (
                   <p className="text-amber-700 text-xs font-semibold mt-0.5">Enterprise Premium</p>
                 )}
@@ -159,13 +177,28 @@ function CafeteriasMapInner({
 
 /** Mapa OpenStreetMap + Leaflet (100% gratis, sin API key). */
 export default function CafeteriasMap(props) {
-  const [mounted, setMounted] = useState(false);
+  const [clientReady, setClientReady] = useState(false);
+  const [leafletReady, setLeafletReady] = useState(() => !isRouteSlideActive());
 
   useEffect(() => {
-    setMounted(true);
+    setClientReady(true);
   }, []);
 
-  if (!mounted) {
+  useEffect(() => {
+    const hideLeaflet = () => setLeafletReady(false);
+    const showLeaflet = () => setLeafletReady(true);
+
+    window.addEventListener(ROUTE_TRANSITION_START_EVENT, hideLeaflet);
+    window.addEventListener(ROUTE_TRANSITION_END_EVENT, showLeaflet);
+    if (!isRouteSlideActive()) setLeafletReady(true);
+
+    return () => {
+      window.removeEventListener(ROUTE_TRANSITION_START_EVENT, hideLeaflet);
+      window.removeEventListener(ROUTE_TRANSITION_END_EVENT, showLeaflet);
+    };
+  }, []);
+
+  if (!clientReady || !leafletReady) {
     return (
       <div className="fmc-map-shell flex items-center justify-center bg-cream-200 dark:bg-coffee-800 font-body text-coffee-600 dark:text-coffee-300 text-sm">
         Inicializando mapa…

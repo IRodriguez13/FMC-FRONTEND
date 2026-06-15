@@ -6,6 +6,10 @@ import {
   enterpriseRegister,
 } from '../api/authApi';
 import {
+  addConsumerFavorite,
+  fetchConsumerFavoriteIds,
+  removeConsumerFavorite,
+  syncConsumerFavorites,
   fetchConsumerProfile,
   updateConsumerProfile,
   uploadConsumerAvatar,
@@ -16,6 +20,8 @@ import {
   fetchEnterpriseCafeteria,
   updateEnterpriseCafeteria,
   updateEnterpriseSubscriptionTier,
+  uploadEnterpriseAvatar,
+  deleteEnterpriseAvatar,
 } from '../api/enterpriseApi';
 import {
   clearToken,
@@ -26,6 +32,21 @@ import {
   setFavoriteIds,
   setSession,
 } from '../lib/authStorage';
+
+async function mergeFavoriteIds(token, signal) {
+  const local = getFavoriteIds();
+  try {
+    const res = await syncConsumerFavorites(local, token);
+    return (res.cafeteriaIds ?? []).map(String);
+  } catch {
+    try {
+      const res = await fetchConsumerFavoriteIds(token, signal);
+      return (res.cafeteriaIds ?? []).map(String);
+    } catch {
+      return local;
+    }
+  }
+}
 
 const AuthContext = createContext(null);
 
@@ -47,6 +68,7 @@ function enterpriseFromDto(dto, email) {
     id: String(dto.id),
     email,
     name: dto.name || email.split('@')[0],
+    avatarUrl: dto.avatarUrl || null,
     role: 'enterprise',
     cafeteriaId: String(dto.id),
     enterpriseSubscriptionTier: dto.subscriptionTier,
@@ -80,6 +102,9 @@ export function AuthProvider({ children }) {
   const applyConsumerSession = useCallback(async (authResponse, emailHint) => {
     persistAuth(authResponse);
     const profileUser = await hydrateConsumer(authResponse.token);
+    const favIds = await mergeFavoriteIds(authResponse.token);
+    setFavorites(favIds);
+    setFavoriteIds(favIds);
     setUser(profileUser);
     return profileUser;
   }, [persistAuth]);
@@ -112,6 +137,11 @@ export function AuthProvider({ children }) {
           if (!ac.signal.aborted) {
             setTokenState(stored);
             setUser(profileUser);
+            const favIds = await mergeFavoriteIds(stored, ac.signal);
+            if (!ac.signal.aborted) {
+              setFavorites(favIds);
+              setFavoriteIds(favIds);
+            }
           }
         }
       } catch (e) {
@@ -172,14 +202,24 @@ export function AuthProvider({ children }) {
     setFavoriteIds([]);
   }, []);
 
-  const toggleFavorite = useCallback((cafId) => {
+  const toggleFavorite = useCallback(async (cafId) => {
     const id = String(cafId);
-    setFavorites((prev) => {
-      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
-      setFavoriteIds(next);
-      return next;
-    });
-  }, []);
+    const wasFav = favorites.includes(id);
+    const prev = favorites;
+    const next = wasFav ? prev.filter((x) => x !== id) : [...prev, id];
+    setFavorites(next);
+    setFavoriteIds(next);
+
+    if (!token || user?.role !== 'consumer') return;
+
+    try {
+      if (wasFav) await removeConsumerFavorite(id, token);
+      else await addConsumerFavorite(id, token);
+    } catch {
+      setFavorites(prev);
+      setFavoriteIds(prev);
+    }
+  }, [favorites, token, user?.role]);
 
   const isFavorite = useCallback((cafId) => favorites.includes(String(cafId)), [favorites]);
 
@@ -255,6 +295,27 @@ export function AuthProvider({ children }) {
     setUser(enterpriseFromDto(dto, user.email));
   }, [token, user]);
 
+  const saveEnterpriseAvatar = useCallback(
+    async (file) => {
+      if (!token) throw new Error('Sin sesión enterprise.');
+      const dto = await uploadEnterpriseAvatar(file, token);
+      setUser((prev) =>
+        prev?.role === 'enterprise' ? enterpriseFromDto(dto, prev.email) : prev
+      );
+      return dto;
+    },
+    [token]
+  );
+
+  const removeEnterpriseAvatar = useCallback(async () => {
+    if (!token) throw new Error('Sin sesión enterprise.');
+    const dto = await deleteEnterpriseAvatar(token);
+    setUser((prev) =>
+      prev?.role === 'enterprise' ? enterpriseFromDto(dto, prev.email) : prev
+    );
+    return dto;
+  }, [token]);
+
   const isConsumer = user?.role === 'consumer';
   const isEnterprise = user?.role === 'enterprise';
 
@@ -281,6 +342,8 @@ export function AuthProvider({ children }) {
         saveEnterpriseCafeteria,
         setEnterpriseSubscriptionTier,
         refreshEnterprise,
+        saveEnterpriseAvatar,
+        removeEnterpriseAvatar,
       }}
     >
       {children}

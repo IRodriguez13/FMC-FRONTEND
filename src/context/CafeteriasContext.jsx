@@ -8,7 +8,7 @@ import { useAuth } from './AuthContext';
 const CafeteriasContext = createContext(null);
 
 export function CafeteriasProvider({ children }) {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [cafes, setCafes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -35,7 +35,9 @@ export function CafeteriasProvider({ children }) {
         })
       );
       if (signal?.aborted) return;
-      const mapped = mapNearbyResponse(raw);
+      const mapped = mapNearbyResponse(raw, {
+        showDiscounts: user?.role === 'consumer' && user?.premium,
+      });
       setCafes(mapped.items);
       setMeta({
         queryLatitude: mapped.queryLatitude,
@@ -51,7 +53,7 @@ export function CafeteriasProvider({ children }) {
     } finally {
       if (!signal?.aborted) setLoading(false);
     }
-  }, [token, radiusKm]);
+  }, [token, radiusKm, user?.premium, user?.role]);
 
   const refetch = useCallback(async (tokenOverride) => {
     abortRef.current?.abort();

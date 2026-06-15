@@ -1,10 +1,11 @@
 import { jsPDF } from 'jspdf';
+import { couponBenefitLabel, couponSourceLabel, formatCouponWeekEnd } from './couponUtils';
 
 const LOGO_PATH = '/img/logo.png';
 const LEGAL_DISCLAIMER =
-  'Este cupón no tiene validez legal. Forma parte de un proyecto académico/demo de Find My Coffee.';
+  'Este cupón no tiene validez legal. Forma parte de un proyecto académico/demo de Find My Coffee. Válido solo la semana indicada.';
 
-export function buildCouponFilename(cafeName) {
+export function buildCouponFilename(cafeName, code) {
   const slug = String(cafeName ?? 'cafeteria')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
@@ -12,8 +13,9 @@ export function buildCouponFilename(cafeName) {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
     .slice(0, 40);
+  const codeSlug = code ? `-${String(code).toLowerCase()}` : '';
   const date = new Date().toISOString().slice(0, 10);
-  return `cupon-fmc-${slug || 'local'}-${date}.pdf`;
+  return `cupon-fmc-${slug || 'local'}${codeSlug}-${date}.pdf`;
 }
 
 async function loadLogoDataUrl() {
@@ -42,14 +44,13 @@ function wrapText(doc, text, maxWidth) {
 }
 
 /**
- * Genera y descarga un PDF cupón de descuento Premium.
- * @param {{ name: string, address?: string, discountPercent: number }} cafe
+ * @param {{ name: string, address?: string }} cafe
  * @param {{ name?: string, email?: string }} user
+ * @param {{ title?: string, code?: string, kind?: string|number, discountPercent?: number, fixedAmountArs?: number, validUntil?: string, source?: string, description?: string }} coupon
  */
-export async function downloadDiscountCoupon(cafe, user) {
-  if (cafe?.discountPercent == null) {
-    throw new Error('Este local no tiene descuento activo.');
-  }
+export async function downloadDiscountCoupon(cafe, user, coupon = null) {
+  const benefit = coupon ? couponBenefitLabel(coupon) : (cafe?.discountPercent != null ? `-${cafe.discountPercent}%` : null);
+  if (!benefit) throw new Error('Este cupón no está disponible.');
 
   const logoData = await loadLogoDataUrl();
   const logoSize = await loadImageSize(logoData);
@@ -68,12 +69,13 @@ export async function downloadDiscountCoupon(cafe, user) {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(14);
   doc.setTextColor(90, 60, 30);
-  doc.text('CUPÓN DE DESCUENTO', pageW / 2, y, { align: 'center' });
+  doc.text('CUPÓN SEMANAL', pageW / 2, y, { align: 'center' });
   y += 6;
 
   doc.setFontSize(9);
   doc.setTextColor(120, 80, 40);
-  doc.text('Find My Coffee · Plan Premium', pageW / 2, y, { align: 'center' });
+  const sourceLine = coupon?.source ? couponSourceLabel(coupon.source) : 'Find My Coffee · Plan Premium';
+  doc.text(sourceLine, pageW / 2, y, { align: 'center' });
   y += 10;
 
   doc.setDrawColor(192, 139, 64);
@@ -100,18 +102,30 @@ export async function downloadDiscountCoupon(cafe, user) {
   }
 
   doc.setFillColor(250, 243, 224);
-  doc.roundedRect(margin, y, contentW, 22, 3, 3, 'F');
+  doc.roundedRect(margin, y, contentW, 26, 3, 3, 'F');
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(22);
+  doc.setFontSize(coupon?.kind === 'TwoForOne' || coupon?.kind === 2 ? 14 : 22);
   doc.setTextColor(160, 110, 40);
-  doc.text(`-${cafe.discountPercent}%`, pageW / 2, y + 14, { align: 'center' });
-  y += 28;
+  const title = coupon?.title && (coupon.kind === 'TwoForOne' || coupon.kind === 2)
+    ? coupon.title
+    : benefit;
+  const titleLines = wrapText(doc, title, contentW - 8);
+  doc.text(titleLines, pageW / 2, y + 14, { align: 'center' });
+  y += 32;
+
+  if (coupon?.code) {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(40, 30, 20);
+    doc.text(`Código: ${coupon.code}`, pageW / 2, y, { align: 'center' });
+    y += 7;
+  }
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9.5);
   doc.setTextColor(40, 30, 20);
-  const body =
-    'Presentá este cupón en el local de parte de Find My Coffee para acceder al descuento indicado.';
+  const body = coupon?.description
+    || 'Presentá este cupón en el local durante la semana vigente.';
   const bodyLines = wrapText(doc, body, contentW);
   doc.text(bodyLines, margin, y);
   y += bodyLines.length * 4.5 + 6;
@@ -124,10 +138,17 @@ export async function downloadDiscountCoupon(cafe, user) {
     y += 5;
   }
 
+  const weekEnd = coupon?.validUntil ? formatCouponWeekEnd(coupon.validUntil) : null;
+  if (weekEnd) {
+    doc.text(`Válido hasta: ${weekEnd}`, margin, y);
+    y += 5;
+  }
+
   const issued = new Date().toLocaleDateString('es-AR', {
     day: '2-digit',
     month: 'long',
     year: 'numeric',
+    timeZone: 'America/Argentina/Buenos_Aires',
   });
   doc.text(`Emitido: ${issued}`, margin, y);
   y += 10;
@@ -141,5 +162,5 @@ export async function downloadDiscountCoupon(cafe, user) {
   const disclaimerLines = wrapText(doc, LEGAL_DISCLAIMER, contentW);
   doc.text(disclaimerLines, margin, y);
 
-  doc.save(buildCouponFilename(cafe.name));
+  doc.save(buildCouponFilename(cafe.name, coupon?.code));
 }

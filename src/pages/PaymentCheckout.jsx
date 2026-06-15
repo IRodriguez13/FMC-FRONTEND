@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, CreditCard, Loader2, Shield, Star } from 'lucide-react';
+import { CheckCircle2, CreditCard, Loader2, Shield, Star } from 'lucide-react';
+import BackNavLink from '../components/BackNavLink';
 import { useAuth } from '../context/AuthContext';
 import { useCafeterias } from '../context/CafeteriasContext';
 import { useToast } from '../context/ToastContext';
@@ -14,7 +15,7 @@ const PLANS = {
     benefits: [
       'Radio de búsqueda ampliado (15 km)',
       'Hasta 50 cafeterías por consulta',
-      'Descuentos comerciales visibles en listados',
+      'Descuentos comerciales y cupones semanales visibles',
     ],
     activate: 'consumer',
     successPath: '/profile',
@@ -24,9 +25,9 @@ const PLANS = {
     price: '$9.990',
     period: '/mes',
     benefits: [
-      'Mayor visibilidad en el mapa (ranking boost)',
-      'Aparecés antes que locales Standard en /nearby',
-      'Icono ámbar en el mapa',
+      'Mayor visibilidad en Explorar y Mapa (ranking boost)',
+      'Badge Enterprise Premium en listados',
+      'Cupones semanales del negocio (% , monto fijo o 2x1)',
     ],
     activate: 'enterprise',
     successPath: '/enterprise',
@@ -60,7 +61,7 @@ export default function PaymentCheckout() {
       <div className="min-h-screen flex items-center justify-center p-6">
         <div className="text-center">
           <p className="font-body text-coffee-600 mb-4">Plan de pago no encontrado.</p>
-          <Link to="/" className="btn-primary">Volver al inicio</Link>
+          <BackNavLink fallback="/explore" label="Volver" className="btn-primary inline-flex" />
         </div>
       </div>
     );
@@ -109,12 +110,11 @@ export default function PaymentCheckout() {
     <div className="min-h-screen bg-cream-100 dark:bg-coffee-900">
       <div className="bg-coffee-700 py-8 px-4">
         <div className="max-w-lg mx-auto">
-          <Link
-            to={plan.successPath}
+          <BackNavLink
+            fallback={plan.successPath}
+            label="Volver"
             className="inline-flex items-center gap-2 text-cream-300 hover:text-cream-100 font-body text-sm mb-4"
-          >
-            <ArrowLeft size={16} /> Volver
-          </Link>
+          />
           <h1 className="font-display text-2xl font-bold text-cream-100 flex items-center gap-2">
             <CreditCard size={24} />
             Pasarela de pagos

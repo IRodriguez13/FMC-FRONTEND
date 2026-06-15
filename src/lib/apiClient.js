@@ -14,6 +14,25 @@ function parseProblemDetail(data) {
   return data.detail || data.title || null;
 }
 
+/** Solo errores que implican JWT/usuario inválido — no cualquier 404 de recurso. */
+function markSessionExpiredIfNeeded(err, { token, status, data }) {
+  if (!token || status !== 401 && status !== 404) return;
+
+  if (status === 401) {
+    err.sessionExpired = true;
+    return;
+  }
+
+  const detail = parseProblemDetail(data);
+  if (
+    detail === 'Usuario no encontrado.' ||
+    detail === 'Cuenta enterprise no encontrada.' ||
+    detail === 'Token inválido.'
+  ) {
+    err.sessionExpired = true;
+  }
+}
+
 export async function apiRequest(path, { method = 'GET', body, token, signal } = {}) {
   const base = getApiBase();
   const url = base
@@ -48,8 +67,7 @@ export async function apiRequest(path, { method = 'GET', body, token, signal } =
       (typeof data === 'string' ? data : null) ||
       `Error ${res.status}`;
     const err = new ApiError(msg, res.status, data);
-    // Solo rutas autenticadas: 401/404 en login/register son credenciales, no sesión vencida.
-    if (token && (res.status === 401 || res.status === 404)) err.sessionExpired = true;
+    markSessionExpiredIfNeeded(err, { token, status: res.status, data });
     throw err;
   }
 
@@ -90,7 +108,7 @@ export async function apiUpload(path, { file, fieldName = 'file', token, signal 
       (typeof data === 'string' ? data : null) ||
       `Error ${res.status}`;
     const err = new ApiError(msg, res.status, data);
-    if (token && (res.status === 401 || res.status === 404)) err.sessionExpired = true;
+    markSessionExpiredIfNeeded(err, { token, status: res.status, data });
     throw err;
   }
 

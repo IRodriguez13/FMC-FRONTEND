@@ -27,3 +27,33 @@ export function updateConsumerTier(tier, token) {
     body: { tier },
   });
 }
+
+export function fetchConsumerFavorites(token, signal) {
+  return apiRequest('/api/consumer/me/favorites', { token, signal });
+}
+
+export function fetchConsumerFavoriteIds(token, signal) {
+  return apiRequest('/api/consumer/me/favorites/ids', { token, signal });
+}
+
+export function syncConsumerFavorites(cafeteriaIds, token) {
+  return apiRequest('/api/consumer/me/favorites/sync', {
+    method: 'PUT',
+    token,
+    body: cafeteriaIds,
+  });
+}
+
+export function addConsumerFavorite(cafeteriaId, token) {
+  return apiRequest(`/api/consumer/me/favorites/${cafeteriaId}`, {
+    method: 'PUT',
+    token,
+  });
+}
+
+export function removeConsumerFavorite(cafeteriaId, token) {
+  return apiRequest(`/api/consumer/me/favorites/${cafeteriaId}`, {
+    method: 'DELETE',
+    token,
+  });
+}

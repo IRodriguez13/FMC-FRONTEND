@@ -1,10 +1,11 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation, useOutlet } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { CafeteriasProvider } from './context/CafeteriasContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { ToastProvider } from './context/ToastContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import RouteTransition from './components/RouteTransition';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -20,22 +21,33 @@ import Terms from './pages/Terms';
 import Demo from './pages/Demo';
 import { useOptionalAnalytics } from './lib/useOptionalAnalytics';
 
-function Layout({ children }) {
+function Layout() {
   useOptionalAnalytics();
+  const location = useLocation();
+  const outlet = useOutlet();
+  const isMap = location.pathname === '/map';
+
   return (
-    <div className="min-h-screen bg-cream-100 dark:bg-coffee-900 flex flex-col">
+    <div
+      className={`bg-cream-100 dark:bg-coffee-900 flex flex-col ${
+        isMap ? 'h-screen overflow-hidden' : 'min-h-screen'
+      }`}
+    >
       <Navbar />
-      <main className="flex-1">{children}</main>
-      <Footer />
+      <RouteTransition location={location}>{outlet}</RouteTransition>
+      {!isMap && <Footer />}
     </div>
   );
 }
 
-function NoNavLayout({ children }) {
+function NoNavLayout() {
   useOptionalAnalytics();
+  const location = useLocation();
+  const outlet = useOutlet();
+
   return (
     <div className="min-h-screen bg-cream-100 dark:bg-coffee-900 flex flex-col">
-      <main className="flex-1">{children}</main>
+      <RouteTransition location={location} variant="fade">{outlet}</RouteTransition>
     </div>
   );
 }
@@ -48,21 +60,25 @@ export default function App() {
           <CafeteriasProvider>
             <BrowserRouter>
               <Routes>
-                <Route path="/login" element={<NoNavLayout><Login /></NoNavLayout>} />
-                <Route path="/register" element={<NoNavLayout><Register /></NoNavLayout>} />
-                <Route path="/register-business" element={<NoNavLayout><RegisterBusiness /></NoNavLayout>} />
+                <Route element={<NoNavLayout />}>
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/register" element={<Register />} />
+                  <Route path="/register-business" element={<RegisterBusiness />} />
+                </Route>
 
-                <Route path="/" element={<Layout><Home /></Layout>} />
-                <Route path="/explore" element={<Layout><Explore /></Layout>} />
-                <Route path="/cafe/:id" element={<Layout><CafeDetail /></Layout>} />
-                <Route path="/enterprise" element={<Layout><EnterpriseDashboard /></Layout>} />
-                <Route path="/map" element={<Layout><MapView /></Layout>} />
-                <Route path="/profile" element={<Layout><Profile /></Layout>} />
-                <Route path="/favorites" element={<Layout><Favorites /></Layout>} />
-                <Route path="/checkout/:planKey" element={<Layout><PaymentCheckout /></Layout>} />
-                <Route path="/terms" element={<Layout><Terms /></Layout>} />
-                <Route path="/demo" element={<Layout><Demo /></Layout>} />
-                <Route path="*" element={<Layout><Home /></Layout>} />
+                <Route element={<Layout />}>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/explore" element={<Explore />} />
+                  <Route path="/cafe/:id" element={<CafeDetail />} />
+                  <Route path="/enterprise" element={<EnterpriseDashboard />} />
+                  <Route path="/map" element={<MapView />} />
+                  <Route path="/profile" element={<Profile />} />
+                  <Route path="/favorites" element={<Favorites />} />
+                  <Route path="/checkout/:planKey" element={<PaymentCheckout />} />
+                  <Route path="/terms" element={<Terms />} />
+                  <Route path="/demo" element={<Demo />} />
+                  <Route path="*" element={<Home />} />
+                </Route>
               </Routes>
             </BrowserRouter>
           </CafeteriasProvider>
