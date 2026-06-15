@@ -25,6 +25,8 @@ npm run test:watch   # modo watch
 
 Detalle: [testing.md](./testing.md).
 
+Historial de feats: [changelog.md](./changelog.md).
+
 ## Rutas principales
 
 | Ruta | Pantalla |
