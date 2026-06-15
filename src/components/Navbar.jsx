@@ -5,6 +5,7 @@ import Logo from './Logo';
 import ThemeToggle from './ThemeToggle';
 import { useAuth } from '../context/AuthContext';
 import { getEmail } from '../lib/authStorage';
+import { resolveMediaUrl } from '../lib/mediaUrl';
 
 function formatDisplayName(name) {
   if (!name) return '';
@@ -88,8 +89,18 @@ export default function Navbar() {
                 className="flex items-center gap-2 bg-coffee-600 hover:bg-coffee-500 text-cream-100 px-3 py-2 rounded-xl transition-all"
                 aria-label="Menú de cuenta"
               >
-                <div className="w-7 h-7 bg-cream-200 rounded-full flex items-center justify-center">
-                  {isEnterprise ? <Store size={14} className="text-coffee-700" /> : <User size={14} className="text-coffee-700" />}
+                <div className="w-7 h-7 bg-cream-200 rounded-full flex items-center justify-center overflow-hidden shrink-0">
+                  {user?.avatarUrl ? (
+                    <img
+                      src={resolveMediaUrl(user.avatarUrl)}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
+                  ) : isEnterprise ? (
+                    <Store size={14} className="text-coffee-700" />
+                  ) : (
+                    <User size={14} className="text-coffee-700" />
+                  )}
                 </div>
                 <ChevronDown size={14} className={`hidden sm:block transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
               </button>

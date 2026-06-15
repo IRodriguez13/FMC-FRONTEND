@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { User, MapPin, Heart, History, Bell, LogOut, Star, Coffee, ChevronRight, Camera, ArrowLeft } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { User, MapPin, Heart, History, Bell, LogOut, Star, Coffee, ChevronRight, Camera, ArrowLeft, Trash2, Pencil } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCafeterias } from '../context/CafeteriasContext';
@@ -7,10 +7,12 @@ import CafeCoverImage from '../components/CafeCoverImage';
 import { friendlyApiMessage } from '../lib/userFacingError';
 import { resolveMediaUrl } from '../lib/mediaUrl';
 
-function ProfilePanel({ children, className = '' }) {
+function ProfilePanel({ children, className = '', allowOverflow = false }) {
   return (
     <div
-      className={`rounded-2xl border border-sand-200 dark:border-coffee-600 bg-white dark:bg-coffee-800 overflow-hidden shadow-card ${className}`}
+      className={`rounded-2xl border border-sand-200 dark:border-coffee-600 bg-white dark:bg-coffee-800 shadow-card ${
+        allowOverflow ? 'overflow-visible' : 'overflow-hidden'
+      } ${className}`}
     >
       {children}
     </div>
@@ -36,8 +38,103 @@ const linkRowClass =
 const iconBoxClass =
   'w-8 h-8 bg-cream-100 dark:bg-coffee-700 rounded-xl flex items-center justify-center shrink-0';
 
+const avatarMenuItemClass =
+  'w-full flex items-center gap-2.5 px-3 py-2.5 text-left font-body text-sm text-coffee-800 dark:text-cream-100 hover:bg-cream-100 dark:hover:bg-coffee-700 transition-colors';
+
+function ProfileAvatarEditor({ name, avatarUrl, disabled, onFileSelect, onRemove }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const rootRef = useRef(null);
+  const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handlePointerDown = (event) => {
+      if (rootRef.current && !rootRef.current.contains(event.target)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handlePointerDown);
+    return () => document.removeEventListener('mousedown', handlePointerDown);
+  }, [menuOpen]);
+
+  return (
+    <div ref={rootRef} className="relative shrink-0 pr-1 pb-1">
+      {avatarUrl ? (
+        <img
+          src={resolveMediaUrl(avatarUrl)}
+          alt={name}
+          className="w-16 h-16 rounded-2xl object-cover border border-sand-200 dark:border-coffee-600"
+        />
+      ) : (
+        <div className="w-16 h-16 bg-coffee-600 dark:bg-coffee-700 rounded-2xl flex items-center justify-center">
+          <User size={28} className="text-cream-100" />
+        </div>
+      )}
+
+      <button
+        type="button"
+        onMouseDown={e => e.stopPropagation()}
+        onClick={e => {
+          e.stopPropagation();
+          setMenuOpen(open => !open);
+        }}
+        disabled={disabled}
+        className="absolute -bottom-0.5 -right-0.5 w-7 h-7 bg-cream-200 dark:bg-coffee-600 border border-sand-300 dark:border-coffee-500 rounded-full flex items-center justify-center hover:bg-cream-100 dark:hover:bg-coffee-500 transition-colors disabled:opacity-50 shadow-sm z-10"
+        aria-label="Editar foto de perfil"
+        aria-expanded={menuOpen}
+        aria-haspopup="menu"
+      >
+        <Pencil size={12} className="text-coffee-600 dark:text-coffee-200" />
+      </button>
+
+      {menuOpen && (
+        <div
+          role="menu"
+          className="absolute left-full top-0 ml-2 z-50 min-w-[11.5rem] rounded-xl border border-sand-200 dark:border-coffee-600 bg-white dark:bg-coffee-800 shadow-coffee-lg py-1 animate-slide-down"
+        >
+          <button
+            type="button"
+            role="menuitem"
+            className={avatarMenuItemClass}
+            onClick={() => {
+              setMenuOpen(false);
+              fileInputRef.current?.click();
+            }}
+          >
+            <Camera size={15} className="text-coffee-400 dark:text-coffee-300 shrink-0" />
+            {avatarUrl ? 'Cambiar foto' : 'Subir foto'}
+          </button>
+          {avatarUrl && (
+            <button
+              type="button"
+              role="menuitem"
+              className={`${avatarMenuItemClass} text-red-600 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/30`}
+              onClick={() => {
+                setMenuOpen(false);
+                onRemove();
+              }}
+            >
+              <Trash2 size={15} className="shrink-0" />
+              Quitar foto
+            </button>
+          )}
+        </div>
+      )}
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="hidden"
+        disabled={disabled}
+        onChange={onFileSelect}
+      />
+    </div>
+  );
+}
+
 export default function Profile() {
-  const { user, logout, favorites, setConsumerTier, saveConsumerProfile, saveConsumerAvatar, authLoading, isEnterprise } = useAuth();
+  const { user, logout, favorites, setConsumerTier, saveConsumerProfile, saveConsumerAvatar, removeConsumerAvatar, authLoading, isEnterprise } = useAuth();
   const { cafes, refetch } = useCafeterias();
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('main');
@@ -110,9 +207,18 @@ export default function Profile() {
     e.preventDefault();
     setProfileError('');
     setProfileMessage('');
+    const name = profileForm.displayName.trim();
+    if (!name) {
+      setProfileError('El nombre no puede estar vacío.');
+      return;
+    }
+    if (name.length > 80) {
+      setProfileError('El nombre no puede superar 80 caracteres.');
+      return;
+    }
     setProfileSaving(true);
     try {
-      await saveConsumerProfile({ displayName: profileForm.displayName.trim() });
+      await saveConsumerProfile({ displayName: name });
       setProfileMessage('Perfil actualizado.');
     } catch (err) {
       setProfileError(friendlyApiMessage(err, 'No pudimos guardar tu perfil. Probá de nuevo.'));
@@ -138,6 +244,20 @@ export default function Profile() {
     }
   };
 
+  const handleAvatarRemove = async () => {
+    setProfileError('');
+    setProfileMessage('');
+    setAvatarUploading(true);
+    try {
+      await removeConsumerAvatar();
+      setProfileMessage('Foto de perfil eliminada.');
+    } catch (err) {
+      setProfileError(friendlyApiMessage(err, 'No pudimos quitar la foto de perfil.'));
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
+
   const menuItems = [
     { icon: User, label: 'Datos de perfil', section: 'profile' },
     { icon: MapPin, label: 'Direcciones', section: 'addresses' },
@@ -157,34 +277,15 @@ export default function Profile() {
           Volver al inicio
         </Link>
 
-        <ProfilePanel className="p-6 mb-6">
+        <ProfilePanel allowOverflow className="p-6 mb-6">
           <div className="flex items-center gap-4">
-            <div className="relative shrink-0">
-              {user.avatarUrl ? (
-                <img
-                  src={resolveMediaUrl(user.avatarUrl)}
-                  alt={user.name}
-                  className="w-16 h-16 rounded-2xl object-cover border border-sand-200 dark:border-coffee-600"
-                />
-              ) : (
-                <div className="w-16 h-16 bg-coffee-600 dark:bg-coffee-700 rounded-2xl flex items-center justify-center">
-                  <User size={28} className="text-cream-100" />
-                </div>
-              )}
-              <label
-                className="absolute -bottom-1 -right-1 w-6 h-6 bg-cream-200 dark:bg-coffee-600 border border-sand-300 dark:border-coffee-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-cream-100 dark:hover:bg-coffee-500 transition-colors"
-                title="Cambiar foto de perfil"
-              >
-                <Camera size={11} className="text-coffee-500 dark:text-coffee-300" />
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  className="hidden"
-                  disabled={avatarUploading}
-                  onChange={handleAvatarSelect}
-                />
-              </label>
-            </div>
+            <ProfileAvatarEditor
+              name={user.name}
+              avatarUrl={user.avatarUrl}
+              disabled={avatarUploading}
+              onFileSelect={handleAvatarSelect}
+              onRemove={handleAvatarRemove}
+            />
             <div className="flex-1 min-w-0">
               <h2 className="font-display text-xl font-bold leading-snug text-coffee-900 dark:text-cream-50 line-clamp-2">{user.name}</h2>
               <p className="font-body text-coffee-600 dark:text-coffee-300 text-sm truncate">{user.email}</p>
@@ -232,11 +333,18 @@ export default function Profile() {
                 <input
                   id="displayName"
                   type="text"
+                  required
                   maxLength={80}
                   value={profileForm.displayName}
-                  onChange={e => setProfileForm({ displayName: e.target.value })}
+                  onChange={e => {
+                    setProfileForm({ displayName: e.target.value });
+                    if (profileError) setProfileError('');
+                  }}
                   className="w-full rounded-xl border border-sand-200 dark:border-coffee-600 bg-cream-50 dark:bg-coffee-700 px-4 py-2.5 text-coffee-900 dark:text-cream-50 focus:outline-none focus:ring-2 focus:ring-coffee-400"
                 />
+                <p className="font-body text-xs text-coffee-500 dark:text-coffee-400 mt-1">
+                  Obligatorio. Se muestra en el saludo y en tu perfil.
+                </p>
               </div>
               <div>
                 <p className="text-coffee-600 dark:text-coffee-200">
@@ -254,19 +362,11 @@ export default function Profile() {
               </p>
               {profileError && <p className="text-red-600 dark:text-red-300">{profileError}</p>}
               {profileMessage && <p className="text-green-700 dark:text-green-300">{profileMessage}</p>}
-              <div className="flex flex-wrap items-center gap-3 pt-1">
-                <label className="btn-secondary cursor-pointer inline-flex items-center gap-2 text-sm py-2.5 px-4">
-                  <Camera size={16} />
-                  {avatarUploading ? 'Subiendo foto…' : 'Cambiar foto de perfil'}
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    className="hidden"
-                    disabled={avatarUploading}
-                    onChange={handleAvatarSelect}
-                  />
-                </label>
-                <button type="submit" disabled={profileSaving} className="btn-primary text-sm py-2.5 px-5 disabled:opacity-50">
+              <p className="font-body text-xs text-coffee-500 dark:text-coffee-400">
+                Para cambiar o quitar tu foto, usá el ícono de lápiz sobre el avatar de arriba.
+              </p>
+              <div className="pt-1">
+                <button type="submit" disabled={profileSaving || avatarUploading} className="btn-primary text-sm py-2.5 px-5 disabled:opacity-50">
                   {profileSaving ? 'Guardando…' : 'Guardar cambios'}
                 </button>
               </div>

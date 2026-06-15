@@ -8,6 +8,21 @@ Entradas **más recientes arriba**.
 
 ---
 
+## 2026-06-15 — Fotos en reseñas, perfil y proxy dev
+
+**Pedido:** UI reseñas con foto; galería enterprise; avatar lápiz/quitar; validaciones; proxy Vite en dev.  
+**Alcance:** frontend
+
+### Cambios
+
+- `CafeDetail`: foto en reseña, galería solo enterprise, validación estrellas/nombre.
+- `Profile`: menú lápiz (subir/cambiar/quitar foto); avatar en `Navbar`.
+- `EnterpriseDashboard`: fotos oficiales del local.
+- `apiBase.js`: dev vía proxy (`/api`, `/media`); `.env.example` alineado a 5214.
+- Build OK.
+
+---
+
 ## 2026-06-11 — Demo MVP funcional (cierre de oleada)
 
 **Commits:** `bc8d08a`, `57b7e8a`, `35f0452`, `475fea4`, `e24dc31`  

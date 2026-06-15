@@ -1,13 +1,22 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Store, Save, Star, MapPin, AlertCircle, CheckCircle2, LogOut } from 'lucide-react';
+import { Store, Save, Star, MapPin, AlertCircle, CheckCircle2, LogOut, Camera, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import {
+  deleteCafeteriaPhoto,
+  fetchCafeteriaPhotos,
+  uploadCafeteriaPhoto,
+} from '../api/cafeteriaMediaApi';
+import CafeCoverImage from '../components/CafeCoverImage';
+import ConfirmDialog from '../components/ConfirmDialog';
 import { friendlyApiMessage } from '../lib/userFacingError';
+import { resolveMediaUrl } from '../lib/mediaUrl';
 import { CABA, isWithinCaba } from '../lib/caba';
 
 export default function EnterpriseDashboard() {
   const {
     user,
+    token,
     authLoading,
     isEnterprise,
     saveEnterpriseCafeteria,
@@ -29,6 +38,26 @@ export default function EnterpriseDashboard() {
   const [tierLoading, setTierLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [photos, setPhotos] = useState([]);
+  const [photosLoading, setPhotosLoading] = useState(true);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [deletingPhotoId, setDeletingPhotoId] = useState(null);
+  const [deleteConfirmPhotoId, setDeleteConfirmPhotoId] = useState(null);
+
+  const loadPhotos = useCallback(async (signal) => {
+    if (!cafe?.id) return;
+    setPhotosLoading(true);
+    try {
+      const res = await fetchCafeteriaPhotos(cafe.id, signal);
+      setPhotos(res.items ?? []);
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        setError(friendlyApiMessage(err, 'No pudimos cargar las fotos del local.'));
+      }
+    } finally {
+      setPhotosLoading(false);
+    }
+  }, [cafe?.id]);
 
   useEffect(() => {
     if (!authLoading && !user) navigate('/login');
@@ -47,6 +76,13 @@ export default function EnterpriseDashboard() {
       });
     }
   }, [cafe]);
+
+  useEffect(() => {
+    if (!cafe?.id) return undefined;
+    const ac = new AbortController();
+    loadPhotos(ac.signal);
+    return () => ac.abort();
+  }, [cafe?.id, loadPhotos]);
 
   if (authLoading || !cafe) {
     return (
@@ -93,6 +129,41 @@ export default function EnterpriseDashboard() {
       setError(friendlyApiMessage(err, 'No pudimos cambiar el plan. Probá de nuevo.'));
     } finally {
       setTierLoading(false);
+    }
+  };
+
+  const handlePhotoSelect = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !token || !cafe?.id) return;
+    setUploadingPhoto(true);
+    setError('');
+    setMessage('');
+    try {
+      await uploadCafeteriaPhoto(cafe.id, file, token);
+      setMessage('Foto del local subida.');
+      await loadPhotos();
+    } catch (err) {
+      setError(friendlyApiMessage(err, 'No pudimos subir la foto.'));
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
+  const confirmPhotoDelete = async () => {
+    if (!token || !deleteConfirmPhotoId || !cafe?.id) return;
+    const photoId = deleteConfirmPhotoId;
+    setDeletingPhotoId(photoId);
+    setError('');
+    try {
+      await deleteCafeteriaPhoto(cafe.id, photoId, token);
+      setDeleteConfirmPhotoId(null);
+      setMessage('Foto eliminada.');
+      await loadPhotos();
+    } catch (err) {
+      setError(friendlyApiMessage(err, 'No pudimos eliminar la foto.'));
+    } finally {
+      setDeletingPhotoId(null);
     }
   };
 
@@ -225,6 +296,56 @@ export default function EnterpriseDashboard() {
           </button>
         </form>
 
+        <div className="card p-6 space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="font-display text-lg font-semibold text-coffee-800">Fotos oficiales del local</h2>
+              <p className="font-body text-sm text-coffee-600 mt-1">
+                Estas imágenes se muestran en la ficha pública de tu cafetería.
+              </p>
+            </div>
+            <label className="btn-secondary cursor-pointer inline-flex items-center gap-2 text-sm">
+              <Camera size={16} />
+              {uploadingPhoto ? 'Subiendo…' : 'Subir foto'}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                disabled={uploadingPhoto}
+                onChange={handlePhotoSelect}
+              />
+            </label>
+          </div>
+          {photosLoading ? (
+            <p className="font-body text-sm text-coffee-500">Cargando fotos…</p>
+          ) : photos.length === 0 ? (
+            <p className="font-body text-sm text-coffee-600">
+              Todavía no hay fotos. Subí al menos una para la portada del local.
+            </p>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {photos.map(photo => (
+                <div key={photo.id} className="relative aspect-square rounded-xl overflow-hidden border border-sand-200 bg-coffee-100">
+                  <CafeCoverImage
+                    src={resolveMediaUrl(photo.url)}
+                    alt="Foto del local"
+                    className="w-full h-full object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setDeleteConfirmPhotoId(photo.id)}
+                    disabled={deletingPhotoId === photo.id}
+                    className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/55 text-white hover:bg-red-600 transition-colors disabled:opacity-50"
+                    aria-label="Eliminar foto"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div className="flex flex-wrap gap-3">
           <Link to="/explore" className="btn-secondary flex items-center gap-2">
             <MapPin size={16} /> Ver mapa público
@@ -238,6 +359,17 @@ export default function EnterpriseDashboard() {
           </button>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={deleteConfirmPhotoId != null}
+        title="¿Eliminar foto del local?"
+        message="La imagen dejará de mostrarse en la galería oficial."
+        confirmLabel="Sí, eliminar"
+        cancelLabel="Cancelar"
+        loading={deletingPhotoId != null}
+        onConfirm={confirmPhotoDelete}
+        onCancel={() => { if (!deletingPhotoId) setDeleteConfirmPhotoId(null); }}
+      />
     </div>
   );
 }

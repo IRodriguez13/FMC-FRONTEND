@@ -2,12 +2,15 @@ import { useCallback, useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Camera, Download, Heart, MapPin, Pencil, Share2, Star, Tag, Trash2, X } from 'lucide-react';
 import {
+  deleteCafeteriaPhoto,
   deleteCafeteriaReview,
+  deleteReviewPhoto,
   fetchCafeteriaPhotos,
   fetchCafeteriaReviews,
   postCafeteriaReview,
   putCafeteriaReview,
   uploadCafeteriaPhoto,
+  uploadReviewPhoto,
 } from '../api/cafeteriaMediaApi';
 import CafeCoverImage from '../components/CafeCoverImage';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -26,6 +29,22 @@ function isOwnReview(review, user) {
   return String(review.authorUserId) === String(user.id) && review.authorRole === user.role;
 }
 
+function isOwnCafeEnterprise(user, cafeId) {
+  return user?.role === 'enterprise' && String(user.cafeteriaId) === String(cafeId);
+}
+
+function validateReviewFields(rating, text) {
+  const errors = {};
+  if (rating < 1 || rating > 5) {
+    errors.rating = 'Elegí una puntuación de 1 a 5 estrellas.';
+  }
+  const trimmed = text?.trim() ?? '';
+  if (trimmed.length > 2000) {
+    errors.text = 'El comentario no puede superar 2000 caracteres.';
+  }
+  return errors;
+}
+
 function DetailPanel({ children, className = '' }) {
   return (
     <section
@@ -38,6 +57,124 @@ function DetailPanel({ children, className = '' }) {
 
 const heroIconBtn =
   'p-2.5 bg-black/45 dark:bg-black/55 backdrop-blur-sm rounded-full text-white shadow-md transition-all hover:bg-black/60 dark:hover:bg-black/70 hover:scale-105';
+
+const photoOverlayBtn =
+  'p-2 rounded-lg bg-black/55 text-white hover:bg-black/70 transition-colors disabled:opacity-50';
+
+function ReviewPhotoDraft({ file, previewUrl, inputId, disabled, onFileSelect, onClear }) {
+  const src = file ? URL.createObjectURL(file) : previewUrl ?? null;
+
+  if (!src) {
+    return (
+      <label
+        htmlFor={inputId}
+        className="btn-secondary cursor-pointer inline-flex items-center gap-2 text-sm w-fit"
+      >
+        <Camera size={16} />
+        Agregar foto
+        <input
+          id={inputId}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="hidden"
+          disabled={disabled}
+          onChange={e => {
+            onFileSelect(e.target.files?.[0] ?? null);
+            e.target.value = '';
+          }}
+        />
+      </label>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="relative w-full max-w-xs rounded-xl overflow-hidden border border-sand-200 dark:border-coffee-600">
+        <CafeCoverImage src={src} alt="Vista previa de la reseña" className="w-full h-40 object-cover" />
+        <div className="absolute top-2 right-2 flex gap-2">
+          <label
+            htmlFor={`${inputId}-replace`}
+            className={`${photoOverlayBtn} cursor-pointer`}
+            title="Reemplazar foto"
+            aria-label="Reemplazar foto"
+          >
+            <Camera size={14} />
+            <input
+              id={`${inputId}-replace`}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              disabled={disabled}
+              onChange={e => {
+                onFileSelect(e.target.files?.[0] ?? null);
+                e.target.value = '';
+              }}
+            />
+          </label>
+          <button
+            type="button"
+            onClick={onClear}
+            disabled={disabled}
+            className={`${photoOverlayBtn} hover:bg-red-600`}
+            title="Quitar foto"
+            aria-label="Quitar foto"
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
+      </div>
+      {file?.name && (
+        <p className="font-body text-xs text-coffee-500 dark:text-coffee-300 truncate max-w-xs">{file.name}</p>
+      )}
+    </div>
+  );
+}
+
+function ReviewPhotoPublishedActions({ reviewId, photoUrl, disabled, onReplace, onRemove }) {
+  const inputId = `review-photo-replace-${reviewId}`;
+
+  return (
+    <div className="space-y-3">
+      <a href={resolveMediaUrl(photoUrl)} target="_blank" rel="noreferrer" className="block max-w-xs">
+        <CafeCoverImage
+          src={resolveMediaUrl(photoUrl)}
+          alt="Foto de la reseña"
+          className="w-full h-40 rounded-xl object-cover border border-sand-200 dark:border-coffee-600 hover:opacity-95 transition-opacity"
+        />
+      </a>
+      <div className="flex flex-wrap items-center gap-3 max-w-xs">
+        <label
+          htmlFor={inputId}
+          className="btn-secondary cursor-pointer inline-flex items-center gap-2 text-sm py-2 px-3"
+        >
+          <Camera size={14} />
+          Reemplazar
+          <input
+            id={inputId}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            disabled={disabled}
+            onChange={e => {
+              const selected = e.target.files?.[0];
+              e.target.value = '';
+              if (selected) onReplace(selected);
+            }}
+          />
+        </label>
+        <button
+          type="button"
+          onClick={onRemove}
+          disabled={disabled}
+          className="btn-secondary text-sm py-2 px-3 text-red-600 dark:text-red-300 inline-flex items-center gap-2"
+        >
+          <Trash2 size={14} />
+          Quitar foto
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function CafeDetail() {
   const { id } = useParams();
@@ -64,6 +201,13 @@ export default function CafeDetail() {
   const [deleteConfirmReviewId, setDeleteConfirmReviewId] = useState(null);
   const [downloadingCoupon, setDownloadingCoupon] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [deletingPhotoId, setDeletingPhotoId] = useState(null);
+  const [deleteConfirmPhotoId, setDeleteConfirmPhotoId] = useState(null);
+  const [reviewPhotoFile, setReviewPhotoFile] = useState(null);
+  const [editReviewPhotoFile, setEditReviewPhotoFile] = useState(null);
+  const [uploadingReviewPhoto, setUploadingReviewPhoto] = useState(false);
+  const [reviewFormErrors, setReviewFormErrors] = useState({});
+  const [editFormErrors, setEditFormErrors] = useState({});
   const [actionMessage, setActionMessage] = useState('');
 
   const loadMedia = useCallback(async (signal) => {
@@ -118,6 +262,7 @@ export default function CafeDetail() {
     ? resolveMediaUrl(photos[0].url)
     : cafe.coverImage;
   const ownReview = user ? reviews.find(r => isOwnReview(r, user)) : null;
+  const managesGallery = isOwnCafeEnterprise(user, cafe.id);
   const isConsumerPremium = user?.premium && user?.role === 'consumer';
   const isConsumerFree = user?.role === 'consumer' && !user.premium;
   const checkoutReturn = `/cafe/${id}`;
@@ -128,17 +273,29 @@ export default function CafeDetail() {
       navigate('/login');
       return;
     }
-    if (reviewRating < 1) {
-      setActionMessage('Elegí una puntuación de 1 a 5 estrellas.');
+    const trimmedText = reviewText.trim();
+    const errors = validateReviewFields(reviewRating, trimmedText);
+    if (Object.keys(errors).length > 0) {
+      setReviewFormErrors(errors);
+      setActionMessage('');
       return;
     }
+    setReviewFormErrors({});
     setSubmittingReview(true);
     setActionMessage('');
     try {
-      await postCafeteriaReview(id, { rating: reviewRating, text: reviewText }, token);
+      const saved = await postCafeteriaReview(
+        id,
+        { rating: reviewRating, text: trimmedText || null },
+        token
+      );
+      if (reviewPhotoFile) {
+        await uploadReviewPhoto(id, saved.id, reviewPhotoFile, token);
+      }
       setActionMessage('Reseña guardada.');
       setReviewText('');
       setReviewRating(0);
+      setReviewPhotoFile(null);
       await loadMedia();
     } catch (err) {
       setActionMessage(friendlyApiMessage(err, 'No pudimos publicar tu reseña. Probá de nuevo.'));
@@ -151,6 +308,8 @@ export default function CafeDetail() {
     setEditingReviewId(review.id);
     setEditRating(review.rating);
     setEditText(review.text ?? '');
+    setEditReviewPhotoFile(null);
+    setEditFormErrors({});
     setActionMessage('');
   };
 
@@ -158,19 +317,33 @@ export default function CafeDetail() {
     setEditingReviewId(null);
     setEditRating(0);
     setEditText('');
+    setEditReviewPhotoFile(null);
+    setEditFormErrors({});
   };
 
   const handleReviewEditSave = async (e) => {
     e.preventDefault();
     if (!token || !editingReviewId) return;
-    if (editRating < 1) {
-      setActionMessage('Elegí una puntuación de 1 a 5 estrellas.');
+    const trimmedText = editText.trim();
+    const errors = validateReviewFields(editRating, trimmedText);
+    if (Object.keys(errors).length > 0) {
+      setEditFormErrors(errors);
+      setActionMessage('');
       return;
     }
+    setEditFormErrors({});
     setSavingEdit(true);
     setActionMessage('');
     try {
-      await putCafeteriaReview(id, editingReviewId, { rating: editRating, text: editText }, token);
+      await putCafeteriaReview(
+        id,
+        editingReviewId,
+        { rating: editRating, text: trimmedText || null },
+        token
+      );
+      if (editReviewPhotoFile) {
+        await uploadReviewPhoto(id, editingReviewId, editReviewPhotoFile, token);
+      }
       setActionMessage('Reseña actualizada.');
       cancelEditReview();
       await loadMedia();
@@ -256,12 +429,73 @@ export default function CafeDetail() {
     setActionMessage('');
     try {
       await uploadCafeteriaPhoto(id, file, token);
-      setActionMessage('Foto subida.');
+      setActionMessage('Foto del local actualizada.');
       await loadMedia();
     } catch (err) {
       setActionMessage(friendlyApiMessage(err, 'No pudimos subir la foto. Probá con otra imagen.'));
     } finally {
       setUploadingPhoto(false);
+    }
+  };
+
+  const requestPhotoDelete = (photoId) => {
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+    setDeleteConfirmPhotoId(photoId);
+    setActionMessage('');
+  };
+
+  const cancelPhotoDelete = () => {
+    if (deletingPhotoId) return;
+    setDeleteConfirmPhotoId(null);
+  };
+
+  const confirmPhotoDelete = async () => {
+    if (!token || !deleteConfirmPhotoId) return;
+    const photoId = deleteConfirmPhotoId;
+    setDeletingPhotoId(photoId);
+    setActionMessage('');
+    try {
+      await deleteCafeteriaPhoto(id, photoId, token);
+      setDeleteConfirmPhotoId(null);
+      setActionMessage('Foto eliminada.');
+      await loadMedia();
+    } catch (err) {
+      setActionMessage(friendlyApiMessage(err, 'No pudimos eliminar la foto.'));
+    } finally {
+      setDeletingPhotoId(null);
+    }
+  };
+
+  const handleReviewPhotoRemove = async (reviewId) => {
+    if (!token) return;
+    setUploadingReviewPhoto(true);
+    setActionMessage('');
+    try {
+      await deleteReviewPhoto(id, reviewId, token);
+      setActionMessage('Foto de reseña eliminada.');
+      await loadMedia();
+    } catch (err) {
+      setActionMessage(friendlyApiMessage(err, 'No pudimos quitar la foto de la reseña.'));
+    } finally {
+      setUploadingReviewPhoto(false);
+    }
+  };
+
+  const handleReviewPhotoReplace = async (reviewId, file) => {
+    if (!token || !file) return;
+    setUploadingReviewPhoto(true);
+    setActionMessage('');
+    try {
+      await uploadReviewPhoto(id, reviewId, file, token);
+      setActionMessage('Foto de reseña actualizada.');
+      await loadMedia();
+    } catch (err) {
+      setActionMessage(friendlyApiMessage(err, 'No pudimos actualizar la foto de la reseña.'));
+    } finally {
+      setUploadingReviewPhoto(false);
     }
   };
 
@@ -448,8 +682,13 @@ export default function CafeDetail() {
 
         <DetailPanel>
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <h2 className="font-display text-xl font-semibold text-coffee-900 dark:text-cream-50">Fotos</h2>
-            {user && (
+            <div>
+              <h2 className="font-display text-xl font-semibold text-coffee-900 dark:text-cream-50">Fotos del local</h2>
+              <p className="font-body text-xs text-coffee-500 dark:text-coffee-300 mt-1">
+                Galería oficial gestionada por el negocio.
+              </p>
+            </div>
+            {managesGallery && (
               <label className="btn-secondary cursor-pointer inline-flex items-center gap-2 text-sm">
                 <Camera size={16} />
                 {uploadingPhoto ? 'Subiendo…' : 'Subir foto'}
@@ -468,24 +707,41 @@ export default function CafeDetail() {
             <p className="font-body text-sm text-coffee-500 dark:text-coffee-300">Cargando fotos…</p>
           ) : photos.length === 0 ? (
             <p className="font-body text-sm text-coffee-600 dark:text-coffee-200">
-              Todavía no hay fotos. {user ? 'Sé el primero en subir una.' : 'Iniciá sesión para contribuir.'}
+              {managesGallery
+                ? 'Todavía no hay fotos oficiales. Subí imágenes para mostrar tu local.'
+                : 'El negocio todavía no publicó fotos oficiales de este local.'}
             </p>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {photos.map(photo => (
-                <a
+                <div
                   key={photo.id}
-                  href={resolveMediaUrl(photo.url)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="block aspect-square rounded-xl overflow-hidden border border-sand-200 dark:border-coffee-600 bg-coffee-100 dark:bg-coffee-700"
+                  className="relative aspect-square rounded-xl overflow-hidden border border-sand-200 dark:border-coffee-600 bg-coffee-100 dark:bg-coffee-700 group"
                 >
-                  <CafeCoverImage
-                    src={resolveMediaUrl(photo.url)}
-                    alt={`Foto de ${cafe.name}`}
-                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                  />
-                </a>
+                  <a
+                    href={resolveMediaUrl(photo.url)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="block w-full h-full"
+                  >
+                    <CafeCoverImage
+                      src={resolveMediaUrl(photo.url)}
+                      alt={`Foto de ${cafe.name}`}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  </a>
+                  {managesGallery && (
+                    <button
+                      type="button"
+                      onClick={() => requestPhotoDelete(photo.id)}
+                      disabled={deletingPhotoId === photo.id}
+                      className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/55 text-white hover:bg-red-600 transition-colors disabled:opacity-50"
+                      aria-label="Eliminar foto"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
               ))}
             </div>
           )}
@@ -541,17 +797,66 @@ export default function CafeDetail() {
 
                     {isEditing ? (
                       <form onSubmit={handleReviewEditSave} className="mt-3 space-y-3">
-                        <StarRating rating={editRating} interactive onChange={setEditRating} size={20} />
-                        <textarea
-                          value={editText}
-                          onChange={e => setEditText(e.target.value)}
-                          placeholder="Contanos tu experiencia (opcional)"
-                          rows={3}
-                          maxLength={2000}
-                          className="input-field resize-y min-h-[5rem]"
-                        />
-                        <div className="flex flex-wrap gap-2">
-                          <button type="submit" className="btn-primary text-sm py-2 px-4" disabled={savingEdit || editRating < 1}>
+                        <div>
+                          <StarRating
+                            rating={editRating}
+                            interactive
+                            onChange={value => {
+                              setEditRating(value);
+                              if (editFormErrors.rating) {
+                                setEditFormErrors(prev => {
+                                  const next = { ...prev };
+                                  delete next.rating;
+                                  return next;
+                                });
+                              }
+                            }}
+                            size={20}
+                          />
+                          {editFormErrors.rating && (
+                            <p className="font-body text-xs text-red-600 dark:text-red-300 mt-1">{editFormErrors.rating}</p>
+                          )}
+                        </div>
+                        <div>
+                          <textarea
+                            value={editText}
+                            onChange={e => {
+                              setEditText(e.target.value);
+                              if (editFormErrors.text) {
+                                setEditFormErrors(prev => {
+                                  const next = { ...prev };
+                                  delete next.text;
+                                  return next;
+                                });
+                              }
+                            }}
+                            placeholder="Contanos tu experiencia"
+                            rows={3}
+                            maxLength={2000}
+                            className="input-field resize-y min-h-[5rem]"
+                          />
+                          {editFormErrors.text && (
+                            <p className="font-body text-xs text-red-600 dark:text-red-300 mt-1">{editFormErrors.text}</p>
+                          )}
+                        </div>
+                        <div className="space-y-3">
+                          <ReviewPhotoDraft
+                            file={editReviewPhotoFile}
+                            previewUrl={!editReviewPhotoFile && review.photoUrl ? resolveMediaUrl(review.photoUrl) : null}
+                            inputId={`edit-review-photo-${review.id}`}
+                            disabled={uploadingReviewPhoto || savingEdit}
+                            onFileSelect={setEditReviewPhotoFile}
+                            onClear={() => {
+                              if (editReviewPhotoFile) {
+                                setEditReviewPhotoFile(null);
+                                return;
+                              }
+                              if (review.photoUrl) handleReviewPhotoRemove(review.id);
+                            }}
+                          />
+                        </div>
+                        <div className="flex flex-wrap gap-3 pt-1">
+                          <button type="submit" className="btn-primary text-sm py-2 px-4" disabled={savingEdit}>
                             {savingEdit ? 'Guardando…' : 'Guardar cambios'}
                           </button>
                           <button
@@ -564,11 +869,37 @@ export default function CafeDetail() {
                         </div>
                       </form>
                     ) : (
-                      review.text && (
-                        <p className="font-body text-coffee-700 dark:text-cream-100 text-sm mt-2 leading-relaxed">
-                          {review.text}
-                        </p>
-                      )
+                      <>
+                        {review.photoUrl && own ? (
+                          <div className="mt-3">
+                            <ReviewPhotoPublishedActions
+                              reviewId={review.id}
+                              photoUrl={review.photoUrl}
+                              disabled={uploadingReviewPhoto}
+                              onReplace={file => handleReviewPhotoReplace(review.id, file)}
+                              onRemove={() => handleReviewPhotoRemove(review.id)}
+                            />
+                          </div>
+                        ) : review.photoUrl ? (
+                          <a
+                            href={resolveMediaUrl(review.photoUrl)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="block mt-3 max-w-xs"
+                          >
+                            <CafeCoverImage
+                              src={resolveMediaUrl(review.photoUrl)}
+                              alt="Foto de la reseña"
+                              className="w-full h-40 rounded-xl object-cover border border-sand-200 dark:border-coffee-600 hover:opacity-95 transition-opacity"
+                            />
+                          </a>
+                        ) : null}
+                        {review.text && (
+                          <p className="font-body text-coffee-700 dark:text-cream-100 text-sm mt-2 leading-relaxed">
+                            {review.text}
+                          </p>
+                        )}
+                      </>
                     )}
                   </li>
                 );
@@ -582,29 +913,78 @@ export default function CafeDetail() {
               className="border-t border-sand-200 dark:border-coffee-600 pt-6 space-y-4"
             >
               <p className="font-body text-sm font-medium text-coffee-800 dark:text-cream-100">Dejá tu reseña</p>
-              <StarRating rating={reviewRating} interactive onChange={setReviewRating} size={22} />
-              <textarea
-                value={reviewText}
-                onChange={e => setReviewText(e.target.value)}
-                placeholder="Contanos tu experiencia (opcional)"
-                rows={3}
-                maxLength={2000}
-                className="input-field resize-y min-h-[5rem]"
+              <p className="font-body text-xs text-coffee-500 dark:text-coffee-400 -mt-2">
+                La puntuación es obligatoria si publicás una reseña.
+              </p>
+              <div>
+                <StarRating
+                  rating={reviewRating}
+                  interactive
+                  onChange={value => {
+                    setReviewRating(value);
+                    if (reviewFormErrors.rating) {
+                      setReviewFormErrors(prev => {
+                        const next = { ...prev };
+                        delete next.rating;
+                        return next;
+                      });
+                    }
+                  }}
+                  size={22}
+                />
+                {reviewFormErrors.rating ? (
+                  <p className="font-body text-xs text-red-600 dark:text-red-300 mt-1">{reviewFormErrors.rating}</p>
+                ) : reviewRating < 1 ? (
+                  <p className="font-body text-xs text-coffee-500 dark:text-coffee-400 mt-1">
+                    Tocá las estrellas para puntuar.
+                  </p>
+                ) : null}
+              </div>
+              <div>
+                <textarea
+                  value={reviewText}
+                  onChange={e => {
+                    setReviewText(e.target.value);
+                    if (reviewFormErrors.text) {
+                      setReviewFormErrors(prev => {
+                        const next = { ...prev };
+                        delete next.text;
+                        return next;
+                      });
+                    }
+                  }}
+                  placeholder="Contanos tu experiencia"
+                  rows={3}
+                  maxLength={2000}
+                  className="input-field resize-y min-h-[5rem]"
+                />
+                {reviewFormErrors.text && (
+                  <p className="font-body text-xs text-red-600 dark:text-red-300 mt-1">{reviewFormErrors.text}</p>
+                )}
+              </div>
+              <ReviewPhotoDraft
+                file={reviewPhotoFile}
+                inputId="new-review-photo"
+                disabled={submittingReview}
+                onFileSelect={setReviewPhotoFile}
+                onClear={() => setReviewPhotoFile(null)}
               />
-              <button type="submit" className="btn-primary" disabled={submittingReview || reviewRating < 1}>
-                {submittingReview ? 'Guardando…' : 'Publicar reseña'}
-              </button>
+              <div className="pt-4 mt-2 border-t border-sand-100 dark:border-coffee-700">
+                <button type="submit" className="btn-primary w-fit" disabled={submittingReview}>
+                  {submittingReview ? 'Guardando…' : 'Publicar reseña'}
+                </button>
+              </div>
             </form>
           ) : user && ownReview ? (
             <p className="font-body text-sm text-coffee-600 dark:text-coffee-200 border-t border-sand-200 dark:border-coffee-600 pt-6">
-              Ya publicaste una reseña. Usá editar o eliminar en tu reseña de arriba.
+              Ya publicaste una reseña. Editá el texto con el lápiz o usá Reemplazar / Quitar foto debajo de tu imagen.
             </p>
           ) : (
             <p className="font-body text-sm text-coffee-600 dark:text-coffee-200 border-t border-sand-200 dark:border-coffee-600 pt-6">
               <Link to="/login" className="text-coffee-800 dark:text-cream-50 font-semibold underline">
                 Iniciá sesión
               </Link>{' '}
-              para dejar una reseña o subir fotos.
+              para dejar una reseña.
             </p>
           )}
         </DetailPanel>
@@ -623,12 +1003,23 @@ export default function CafeDetail() {
       <ConfirmDialog
         open={deleteConfirmReviewId != null}
         title="¿Eliminar reseña?"
-        message="Esta acción no se puede deshacer. Tu valoración y comentario se quitarán del local."
+        message="Esta acción no se puede deshacer. Tu valoración, comentario y foto se quitarán del local."
         confirmLabel="Sí, eliminar"
         cancelLabel="Cancelar"
         loading={deletingReviewId != null}
         onConfirm={confirmReviewDelete}
         onCancel={cancelReviewDelete}
+      />
+
+      <ConfirmDialog
+        open={deleteConfirmPhotoId != null}
+        title="¿Eliminar foto del local?"
+        message="La imagen dejará de mostrarse en la galería oficial."
+        confirmLabel="Sí, eliminar"
+        cancelLabel="Cancelar"
+        loading={deletingPhotoId != null}
+        onConfirm={confirmPhotoDelete}
+        onCancel={cancelPhotoDelete}
       />
     </div>
   );

@@ -9,6 +9,7 @@ import {
   fetchConsumerProfile,
   updateConsumerProfile,
   uploadConsumerAvatar,
+  deleteConsumerAvatar,
   updateConsumerTier,
 } from '../api/consumerApi';
 import {
@@ -214,6 +215,13 @@ export function AuthProvider({ children }) {
     [token]
   );
 
+  const removeConsumerAvatar = useCallback(async () => {
+    if (!token) throw new Error('Iniciá sesión primero.');
+    const profile = await deleteConsumerAvatar(token);
+    setUser(consumerFromProfile(profile));
+    return profile;
+  }, [token]);
+
   const saveEnterpriseCafeteria = useCallback(
     async (body) => {
       if (!token) throw new Error('Sin sesión enterprise.');
@@ -269,6 +277,7 @@ export function AuthProvider({ children }) {
         setConsumerTier,
         saveConsumerProfile,
         saveConsumerAvatar,
+        removeConsumerAvatar,
         saveEnterpriseCafeteria,
         setEnterpriseSubscriptionTier,
         refreshEnterprise,

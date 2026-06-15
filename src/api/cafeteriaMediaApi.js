@@ -38,3 +38,25 @@ export function uploadCafeteriaPhoto(cafeteriaId, file, token, signal) {
     signal,
   });
 }
+
+export function deleteCafeteriaPhoto(cafeteriaId, photoId, token) {
+  return apiRequest(`/api/cafeterias/${cafeteriaId}/photos/${photoId}`, {
+    method: 'DELETE',
+    token,
+  });
+}
+
+export function uploadReviewPhoto(cafeteriaId, reviewId, file, token, signal) {
+  return apiUpload(`/api/cafeterias/${cafeteriaId}/reviews/${reviewId}/photo`, {
+    file,
+    token,
+    signal,
+  });
+}
+
+export function deleteReviewPhoto(cafeteriaId, reviewId, token) {
+  return apiRequest(`/api/cafeterias/${cafeteriaId}/reviews/${reviewId}/photo`, {
+    method: 'DELETE',
+    token,
+  });
+}

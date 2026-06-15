@@ -16,6 +16,10 @@ export function uploadConsumerAvatar(file, token, signal) {
   return apiUpload('/api/consumer/me/avatar', { file, token, signal });
 }
 
+export function deleteConsumerAvatar(token) {
+  return apiRequest('/api/consumer/me/avatar', { method: 'DELETE', token });
+}
+
 export function updateConsumerTier(tier, token) {
   return apiRequest('/api/consumer/tier', {
     method: 'PATCH',
