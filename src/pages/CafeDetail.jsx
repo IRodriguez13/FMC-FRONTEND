@@ -21,7 +21,7 @@ import OwnCafeteriaBadge from '../components/OwnCafeteriaBadge';
 import { isOwnEnterpriseCafeteria } from '../lib/ownCafeteria';
 import { useCafeterias } from '../context/CafeteriasContext';
 import { friendlyApiMessage } from '../lib/userFacingError';
-import { couponBenefitLabel, couponSourceLabel, formatCouponWeekEnd } from '../lib/couponUtils';
+import { couponDetailLine, couponHeadline, couponMetaLine, formatRatingSummary } from '../lib/couponUtils';
 import { resolveMediaUrl } from '../lib/mediaUrl';
 
 function authorLabel(role) {
@@ -564,20 +564,26 @@ export default function CafeDetail() {
             </p>
           </div>
           {averageRating != null && (
-            <div className="hidden sm:flex items-center gap-2 bg-white dark:bg-coffee-800 border border-sand-200 dark:border-coffee-600 rounded-xl px-4 py-2 shadow-sm shrink-0 mt-8">
+            <div
+              className="hidden sm:flex items-center gap-2 bg-white dark:bg-coffee-800 border border-sand-200 dark:border-coffee-600 rounded-xl px-4 py-2 shadow-sm shrink-0 mt-8"
+              title={formatRatingSummary(averageRating, totalReviews)}
+            >
               <StarRating rating={averageRating} size={18} />
               <span className="font-body text-sm text-coffee-700 dark:text-cream-100">
-                {averageRating.toFixed(1)} ({totalReviews})
+                {formatRatingSummary(averageRating, totalReviews)}
               </span>
             </div>
           )}
         </div>
 
         {averageRating != null && (
-          <div className="sm:hidden flex items-center gap-2 mb-4 bg-white dark:bg-coffee-800 border border-sand-200 dark:border-coffee-600 rounded-xl px-4 py-2 shadow-sm w-fit">
+          <div
+            className="sm:hidden flex items-center gap-2 mb-4 bg-white dark:bg-coffee-800 border border-sand-200 dark:border-coffee-600 rounded-xl px-4 py-2 shadow-sm w-fit"
+            title={formatRatingSummary(averageRating, totalReviews)}
+          >
             <StarRating rating={averageRating} size={16} />
             <span className="font-body text-sm text-coffee-700 dark:text-cream-100">
-              {averageRating.toFixed(1)} ({totalReviews})
+              {formatRatingSummary(averageRating, totalReviews)}
             </span>
           </div>
         )}
@@ -612,10 +618,13 @@ export default function CafeDetail() {
                   <Tag size={20} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                   <div>
                     <p className="font-display font-semibold text-amber-900 dark:text-amber-100">
-                      {coupon.title} · {couponBenefitLabel(coupon)}
+                      {couponHeadline(coupon)}
                     </p>
                     <p className="font-body text-sm text-amber-800/90 dark:text-amber-200/90 mt-1">
-                      {couponSourceLabel(coupon.source)} · Código {coupon.code} · válido hasta {formatCouponWeekEnd(coupon.validUntil)}
+                      {couponDetailLine(coupon)}
+                    </p>
+                    <p className="font-body text-xs text-amber-700/80 dark:text-amber-300/80 mt-1">
+                      {couponMetaLine(coupon)}
                     </p>
                   </div>
                 </div>

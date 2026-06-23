@@ -57,6 +57,6 @@ Historial de feats: [changelog.md](./changelog.md).
 
 ## Cuentas seed
 
-Contraseña: `SeedPass-123` — ver tabla en `fmcbackend/Documentation/06-dev-ops.md`.
+Contraseña seed: ver [`fmcbackend/README.md`](../../fmcbackend/README.md#seed-demo-bd-vacía-tras-migraciones) (no se muestra en la UI).
 
 Enterprise Palermo y Recoleta incluyen **avatar demo** tras seed/migrate.

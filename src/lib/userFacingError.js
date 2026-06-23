@@ -22,8 +22,8 @@ const BACKEND_DETAIL_MAP = {
   'El nombre no puede superar 80 caracteres.': 'El nombre es demasiado largo (máximo 80 caracteres).',
   'La valoración debe estar entre 1 y 5.': 'La puntuación debe ser entre 1 y 5 estrellas.',
   'Coordenadas geográficas inválidas.': 'Las coordenadas no son válidas.',
-  'Demo pública: usá las cuentas seed documentadas en /demo.':
-    'En la demo usá las cuentas de prueba de la página Ayuda (/demo).',
+  'El registro de nuevas cuentas no está disponible en este momento.':
+    'El registro de nuevas cuentas no está disponible en este momento.',
 };
 
 const PREFIX_RULES = [
@@ -68,7 +68,7 @@ function messageByStatus(status, fallback) {
   if (status === 401) return 'No pudimos verificar tu acceso. Volvé a iniciar sesión.';
   if (status === 403) return 'No tenés permiso para hacer esto con tu cuenta actual.';
   if (status === 404) {
-    return 'No encontramos ese recurso. Si acabás de actualizar la app, reiniciá el servidor backend.';
+    return 'No encontramos ese recurso. Probá de nuevo en unos instantes.';
   }
   if (status === 409) return 'Esa acción no se puede completar ahora. Probá de nuevo.';
   if (status === 429) return 'Hiciste muchos intentos seguidos. Esperá un momento y probá otra vez.';

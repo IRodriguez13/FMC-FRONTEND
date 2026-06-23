@@ -23,9 +23,9 @@ alwaysApply: false
 | Reseña no encontrada. | No encontramos esa reseña. |
 | No podés modificar esta reseña. | Solo podés editar o eliminar tus propias reseñas. |
 | El correo ya está registrado. | Ese correo ya tiene una cuenta… |
-| Demo pública: usá las cuentas seed… | En la demo usá las cuentas de /demo |
+| El registro de nuevas cuentas no está disponible… | Mismo texto (registro cerrado) |
 | Archivo vacío. / Formatos imagen / nombre / valoración / CABA | ver mapa en `userFacingError.js` |
 
 **`sessionExpired` en `apiClient`:** solo 401, o 404 con los `detail` de auth de la tabla (no cualquier 404).
 
-**Cuentas seed:** `fmcbackend/Infrastructure/Persistence/DataSeeder.cs` → `src/data/demoAccounts.js`.
+**Cuentas seed:** `fmcbackend/README.md` (sección Seed demo) y `Infrastructure/Persistence/DataSeeder.cs`.

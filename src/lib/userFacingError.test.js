@@ -52,6 +52,11 @@ describe('friendlyApiMessage', () => {
     expect(friendlyApiMessage(err, 'No pudimos cargar el mapa.')).toMatch(/servidor|mapa/i);
   });
 
+  it('traduce registro deshabilitado', () => {
+    const err = new ApiError('El registro de nuevas cuentas no está disponible en este momento.', 403);
+    expect(friendlyApiMessage(err)).toBe('El registro de nuevas cuentas no está disponible en este momento.');
+  });
+
   it('traduce archivo vacío', () => {
     const err = new ApiError('Archivo vacío.', 400);
     expect(friendlyApiMessage(err)).toBe('Elegí una imagen antes de subir.');

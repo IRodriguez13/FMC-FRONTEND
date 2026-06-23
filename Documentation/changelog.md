@@ -1,14 +1,31 @@
 # Changelog — FMC Frontend
 
 > **Fuente de verdad del código:** Git (`fmcfront`).  
-> **Última verificación:** 2026-06-09  
+> **Última verificación:** 2026-06-23  
 > **Backend acoplado:** [`../fmcbackend/Documentation/changelog.md`](../fmcbackend/Documentation/changelog.md)
 
 Entradas **más recientes arriba**.
 
 ---
 
-## 2026-06-09 — Favoritos server, enterprise dashboard, doc sync
+## 2026-06-23 — UI lista para exposición + E2E base
+
+**Pedido:** Eliminar hints dev en UI; credenciales solo en README; validación pre-deploy.  
+**Alcance:** frontend, docs, e2e
+
+### Cambios
+
+- **`/demo` y `/login`:** sin tabla de cuentas ni referencias a README/backend/seed.
+- **`userFacingError`:** 404 y registro cerrado sin copy técnico.
+- **`discountCouponPdf`:** disclaimer promocional (sin «proyecto académico»).
+- Eliminado `src/data/demoAccounts.js`; credenciales en `README.md` + backend.
+- Playwright: specs públicas y helpers seed (`e2e/`).
+
+### Validación
+
+- `vitest run`: 35/35 OK; `npm run build` OK.
+
+---
 
 **Pedido:** Roadmap (favoritos, métricas, cupones, badges, navegación) + coherencia docs/código.  
 **Alcance:** frontend, documentación

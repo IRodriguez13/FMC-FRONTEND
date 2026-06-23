@@ -17,7 +17,7 @@ cp .env.example .env
 npm run dev
 ```
 
-Login prueba: `consumidor@seed.fmc` / `SeedPass-123` → `/explore` o `/map` (4 cafeterías seed).
+Login prueba: ver tabla en [`fmcbackend/README.md`](../../fmcbackend/README.md#seed-demo-bd-vacía-tras-migraciones) (`consumidor@seed.fmc` / `SeedPass-123`) → `/explore` o `/map` (**22** cafeterías tras `make seed`).
 
 ## Proxy y puertos
 

@@ -3,7 +3,7 @@ import { couponBenefitLabel, couponSourceLabel, formatCouponWeekEnd } from './co
 
 const LOGO_PATH = '/img/logo.png';
 const LEGAL_DISCLAIMER =
-  'Este cupón no tiene validez legal. Forma parte de un proyecto académico/demo de Find My Coffee. Válido solo la semana indicada.';
+  'Este cupón es promocional y válido solo durante la semana indicada. Consultá condiciones en el local.';
 
 export function buildCouponFilename(cafeName, code) {
   const slug = String(cafeName ?? 'cafeteria')

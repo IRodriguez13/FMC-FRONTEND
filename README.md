@@ -34,16 +34,18 @@ El proxy de Vite reenvía `/api` → `http://127.0.0.1:5214` (`vite.config.js`).
 
 ## Cuentas demo (backend seed)
 
-Contraseña: **`SeedPass-123`**
+Contraseña común: **`SeedPass-123`**. Tabla completa y listado de locales en [`fmcbackend/README.md`](../fmcbackend/README.md#seed-demo-bd-vacía-tras-migraciones).
 
-| Rol | Email |
-|-----|--------|
-| Consumidor Free | `consumidor@seed.fmc` |
-| Consumidor Premium | `consumidor-premium@seed.fmc` |
-| Enterprise Premium | `enterprise-premium@seed.fmc` |
-| Enterprise Standard | `enterprise-standard@seed.fmc` |
+| Rol | Email | Password |
+|-----|--------|----------|
+| Consumidor Free | `consumidor@seed.fmc` | `SeedPass-123` |
+| Consumidor Premium | `consumidor-premium@seed.fmc` | `SeedPass-123` |
+| Enterprise Premium (Palermo) | `enterprise-premium@seed.fmc` | `SeedPass-123` |
+| Enterprise Standard (San Telmo) | `enterprise-standard@seed.fmc` | `SeedPass-123` |
+| Enterprise Premium (Recoleta) | `enterprise-recoleta@seed.fmc` | `SeedPass-123` |
+| Enterprise Standard (Caballito) | `enterprise-caballito@seed.fmc` | `SeedPass-123` |
 
-Más cuentas y reglas de negocio: [`fmcbackend/README.md`](../fmcbackend/README.md).
+En login elegí pestaña **Consumidor** o **Negocio** según el rol. Otros enterprise del catálogo: `enterprise-{barrio}@seed.fmc` (misma contraseña).
 
 ## Rutas
 
