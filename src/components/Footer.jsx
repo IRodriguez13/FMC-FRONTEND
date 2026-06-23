@@ -14,6 +14,17 @@ export default function Footer() {
           <span className="text-coffee-500">·</span>
           <span className="text-cream-300">© 2026 · Buenos Aires</span>
         </p>
+        <div className="mt-4 pt-4 border-t border-coffee-800/80 flex items-center justify-center gap-2 opacity-80">
+          <img
+            src="/img/manket.png"
+            alt=""
+            aria-hidden="true"
+            className="h-5 w-5 object-contain shrink-0"
+          />
+          <p className="font-body text-[10px] sm:text-xs text-coffee-400 tracking-wide">
+            Powered by Manke Tech<sup className="text-[8px] align-super">™</sup>
+          </p>
+        </div>
       </div>
     </footer>
   );
