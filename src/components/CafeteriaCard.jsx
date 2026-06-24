@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Heart, MapPin, Star, Tag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -5,7 +6,7 @@ import CafeCoverImage from './CafeCoverImage';
 import OwnCafeteriaBadge from './OwnCafeteriaBadge';
 import { isOwnEnterpriseCafeteria } from '../lib/ownCafeteria';
 
-export default function CafeteriaCard({ cafe }) {
+export default memo(function CafeteriaCard({ cafe }) {
   const { user, toggleFavorite, isFavorite } = useAuth();
   const showDiscount = user?.premium && cafe.discountPercent != null;
   const isEnterprisePremium = cafe.subscriptionTier === 'Premium';
@@ -107,4 +108,12 @@ export default function CafeteriaCard({ cafe }) {
       </div>
     </div>
   );
-}
+}, (prev, next) =>
+  prev.cafe.id === next.cafe.id
+  && prev.cafe.coverImage === next.cafe.coverImage
+  && prev.cafe.distance === next.cafe.distance
+  && prev.cafe.rating === next.cafe.rating
+  && prev.cafe.discountPercent === next.cafe.discountPercent
+  && prev.cafe.subscriptionTier === next.cafe.subscriptionTier
+  && prev.cafe.name === next.cafe.name
+);

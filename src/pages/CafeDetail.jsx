@@ -23,6 +23,12 @@ import { useCafeterias } from '../context/CafeteriasContext';
 import { friendlyApiMessage } from '../lib/userFacingError';
 import { couponDetailLine, couponHeadline, couponMetaLine, formatRatingSummary } from '../lib/couponUtils';
 import { resolveMediaUrl } from '../lib/mediaUrl';
+import {
+  CAFE_MEDIA_STALE_MS,
+  cafePhotosKey,
+  cafeReviewsKey,
+  peekCache,
+} from '../lib/resourceCache';
 
 function authorLabel(role) {
   return role === 'enterprise' ? 'Negocio' : 'Cliente';
@@ -216,18 +222,34 @@ export default function CafeDetail() {
   const [couponsData, setCouponsData] = useState(null);
 
   const loadMedia = useCallback(async (signal) => {
-    setMediaLoading(true);
     setMediaError('');
-    try {
-      const [photosRes, reviewsRes, couponsRes] = await Promise.all([
-        fetchCafeteriaPhotos(id, signal),
-        fetchCafeteriaReviews(id, signal),
-        fetchCafeteriaCoupons(id, token, signal).catch(() => null),
-      ]);
-      setPhotos(photosRes.items ?? []);
+
+    const applyPhotos = (photosRes) => setPhotos(photosRes.items ?? []);
+    const applyReviews = (reviewsRes) => {
       setReviews(reviewsRes.items ?? []);
       setAverageRating(reviewsRes.averageRating ?? null);
       setTotalReviews(reviewsRes.totalCount ?? 0);
+    };
+
+    const photosCached = peekCache(cafePhotosKey(id), { maxStaleMs: CAFE_MEDIA_STALE_MS });
+    const reviewsCached = peekCache(cafeReviewsKey(id), { maxStaleMs: CAFE_MEDIA_STALE_MS });
+    if (photosCached && reviewsCached) {
+      applyPhotos(photosCached);
+      applyReviews(reviewsCached);
+      setMediaLoading(false);
+    } else {
+      setMediaLoading(true);
+    }
+
+    try {
+      const viewerKey = user?.premium ? 'premium' : 'free';
+      const [photosRes, reviewsRes, couponsRes] = await Promise.all([
+        fetchCafeteriaPhotos(id, signal, { onRevalidate: applyPhotos }),
+        fetchCafeteriaReviews(id, signal, { onRevalidate: applyReviews }),
+        fetchCafeteriaCoupons(id, token, signal, { viewerKey }).catch(() => null),
+      ]);
+      applyPhotos(photosRes);
+      applyReviews(reviewsRes);
       setCouponsData(couponsRes);
     } catch (err) {
       if (err.name !== 'AbortError') {
@@ -236,7 +258,7 @@ export default function CafeDetail() {
     } finally {
       setMediaLoading(false);
     }
-  }, [id, token]);
+  }, [id, token, user?.premium]);
 
   useEffect(() => {
     if (!id) return undefined;

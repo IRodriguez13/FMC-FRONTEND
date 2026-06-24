@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { MapPin, Search, X, Navigation, Loader2, AlertCircle, Star, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import BackNavLink from '../components/BackNavLink';
 import { useCafeterias } from '../context/CafeteriasContext';
 import { useAuth } from '../context/AuthContext';
 import { CABA } from '../lib/caba';
+import { useDebouncedValue } from '../lib/useDebouncedValue';
 import CafeteriasMap from '../components/CafeteriasMap';
 import EmptyState from '../components/EmptyState';
 import CafeCoverImage from '../components/CafeCoverImage';
@@ -16,6 +17,7 @@ export default function MapView() {
   const { cafes, loading, error, coords, meta, refetch } = useCafeterias();
   const [selected, setSelected] = useState(null);
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebouncedValue(search);
   const [refreshing, setRefreshing] = useState(false);
 
   const handleRefresh = async () => {
@@ -27,12 +29,14 @@ export default function MapView() {
     }
   };
 
-  const filtered = search
-    ? cafes.filter(c =>
-        c.name.toLowerCase().includes(search.toLowerCase()) ||
-        c.neighborhood.toLowerCase().includes(search.toLowerCase())
-      )
-    : cafes;
+  const filtered = useMemo(() => {
+    if (!debouncedSearch) return cafes;
+    const q = debouncedSearch.toLowerCase();
+    return cafes.filter(c =>
+      c.name.toLowerCase().includes(q) ||
+      c.neighborhood.toLowerCase().includes(q)
+    );
+  }, [cafes, debouncedSearch]);
 
   return (
     <div className="flex-1 flex flex-col min-h-0 bg-cream-100 dark:bg-coffee-900">

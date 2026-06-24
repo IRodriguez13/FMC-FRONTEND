@@ -6,6 +6,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useCafeterias } from '../context/CafeteriasContext';
 import { useAuth } from '../context/AuthContext';
 import { CABA } from '../lib/caba';
+import { useDebouncedValue } from '../lib/useDebouncedValue';
 
 const SORT_OPTIONS = [
   { label: 'Más cercanas', value: 'distance' },
@@ -17,6 +18,7 @@ export default function Explore() {
   const { cafes, loading, error, meta, refetch, radiusKm, setRadiusKm } = useCafeterias();
   const location = useLocation();
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebouncedValue(search);
   const [sort, setSort] = useState('distance');
   const [showFilters, setShowFilters] = useState(false);
   const [premiumOnly, setPremiumOnly] = useState(false);
@@ -43,8 +45,8 @@ export default function Explore() {
   const filtered = useMemo(() => {
     let list = [...cafes];
 
-    if (search) {
-      const q = search.toLowerCase();
+    if (debouncedSearch) {
+      const q = debouncedSearch.toLowerCase();
       list = list.filter(c =>
         c.name.toLowerCase().includes(q) ||
         c.neighborhood.toLowerCase().includes(q) ||
@@ -68,7 +70,7 @@ export default function Explore() {
     });
 
     return list;
-  }, [cafes, search, sort, premiumOnly, discountOnly, user?.premium]);
+  }, [cafes, debouncedSearch, sort, premiumOnly, discountOnly, user?.premium]);
 
   return (
     <div className="min-h-screen bg-cream-100 dark:bg-coffee-900">
